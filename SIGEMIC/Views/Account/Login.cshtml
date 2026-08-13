@@ -1,0 +1,96 @@
+@model SIGEMIC.Models.LoginViewModel
+
+@{
+    ViewData["Title"] = "Iniciar sesión";
+}
+
+<div class="container mt-5">
+
+    <div class="row justify-content-center">
+
+        <div class="col-md-5 col-lg-4">
+
+            <div class="card shadow">
+
+                <div class="card-body p-4">
+
+                    <div class="text-center mb-4">
+
+                        <h2>SIGEMIC</h2>
+
+                        <p class="text-muted">
+                            Sistema de Gestión de Microcréditos
+                        </p>
+
+                    </div>
+
+                    <form asp-controller="Account"
+                          asp-action="Login"
+                          method="post">
+
+                        <div asp-validation-summary="ModelOnly"
+                             class="text-danger mb-3">
+                        </div>
+
+                        <div class="mb-3">
+
+                            <label asp-for="Username"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="Username"
+                                   class="form-control"
+                                   placeholder="Ingrese su usuario">
+
+                            <span asp-validation-for="Username"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                        <div class="mb-3">
+
+                            <label asp-for="Password"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="Password"
+                                   class="form-control"
+                                   placeholder="Ingrese su contraseña">
+
+                            <span asp-validation-for="Password"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                        <div class="d-grid">
+
+                            <button type="submit"
+                                    class="btn btn-primary">
+
+                                Iniciar sesión
+
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts {
+
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+}
