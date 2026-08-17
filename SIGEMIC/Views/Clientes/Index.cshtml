@@ -1,0 +1,119 @@
+@model IEnumerable<SIGEMIC.Models.Cliente>
+
+@{
+    ViewData["Title"] = "Clientes";
+}
+@if (TempData["MensajeExito"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show"
+         role="alert">
+
+        @TempData["MensajeExito"]
+
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="alert">
+        </button>
+
+    </div>
+}
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h2>Clientes</h2>
+            <p class="text-muted">
+                Administración de clientes registrados
+            </p>
+        </div>
+
+        <a asp-controller="Clientes"
+           asp-action="Create"
+           class="btn btn-primary">
+            Nuevo cliente
+        </a>
+
+    </div>
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle">
+
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Nombre</th>
+                            <th>Usuario</th>
+                            <th>Profesión</th>
+                            <th>Ingreso mensual</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        @foreach (var cliente in Model)
+                        {
+                            <tr>
+
+                                <td>
+                                    @cliente.CodigoCliente
+                                </td>
+
+                                <td>
+                                    @cliente.Usuario.Nombres
+                                    @cliente.Usuario.Apellidos
+                                </td>
+
+                                <td>
+                                    @cliente.Usuario.Username
+                                </td>
+
+                                <td>
+                                    @(cliente.Profesion ?? "-")
+                                </td>
+
+                                <td>
+                                    @(cliente.IngresoMensual.HasValue
+                                        ? $"Q {cliente.IngresoMensual.Value:N2}"
+                                        : "-")
+                                </td>
+
+                                <td>
+                                    @cliente.Estado
+                                </td>
+
+                                <td>
+                                    <a asp-action="Details"
+                                       asp-route-id="@cliente.IdCliente"
+                                       class="btn btn-sm btn-outline-primary">
+                                        Ver
+                                    </a>
+
+                                    <a asp-action="Edit"
+                                       asp-route-id="@cliente.IdCliente"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        Editar
+                                    </a>
+                                </td>
+
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

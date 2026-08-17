@@ -1,0 +1,46 @@
+@{
+    ViewData["Title"] = "Panel de Administración";
+}
+
+<div class="container mt-4">
+
+    <h2>Panel de Administración</h2>
+
+    <p>
+        Bienvenido, @User.Identity?.Name
+    </p>
+
+    <hr />
+
+    <div class="row">
+
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5>Clientes</h5>
+                    <p>Administrar clientes registrados.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5>Créditos</h5>
+                    <p>Consultar y administrar microcréditos.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5>Pagos</h5>
+                    <p>Consultar pagos y abonos.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>

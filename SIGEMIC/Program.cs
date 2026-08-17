@@ -8,6 +8,13 @@ builder.Services.AddControllersWithViews();
 
 var connectionString =
     builder.Configuration.GetConnectionString("DefaultConnection");
+    builder.Services.AddAuthentication("SIGEMICCookie")
+    .AddCookie("SIGEMICCookie", options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.AccessDeniedPath = "/Account/AccessDenied";
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+    });
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(
@@ -39,6 +46,9 @@ if (!app.Environment.IsDevelopment())
 
 //app.UseHttpsRedirection();
 app.UseRouting();
+app.UseAuthentication();
+
+app.UseAuthorization();
 
 app.UseAuthorization();
 
