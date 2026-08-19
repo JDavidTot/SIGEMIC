@@ -1,44 +1,235 @@
 @{
-    ViewData["Title"] = "Panel de Administración";
+    ViewData["Title"] = "Dashboard Administrador";
 }
 
 <div class="container mt-4">
 
-    <h2>Panel de Administración</h2>
+    <div class="mb-4">
+        <h2>Panel de Administración</h2>
 
-    <p>
-        Bienvenido, @User.Identity?.Name
-    </p>
-
-    <hr />
+        <p class="text-muted">
+            Bienvenido, @User.Identity?.Name
+        </p>
+    </div>
 
     <div class="row">
 
         <div class="col-md-4 mb-3">
-            <div class="card shadow-sm">
+            <div class="card shadow-sm h-100">
                 <div class="card-body">
+                    <h6 class="text-muted">
+                        Clientes registrados
+                    </h6>
+
+                    <h2>
+                        @ViewBag.TotalClientes
+                    </h2>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">
+                        Créditos activos
+                    </h6>
+
+                    <h2>
+                        @ViewBag.CreditosActivos
+                    </h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+
+                    <h6 class="text-muted">
+                        Créditos atrasados
+                    </h6>
+
+                    <h2>
+                        @ViewBag.CreditosAtrasados
+                    </h2>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row">
+
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <h6 class="text-muted">
+                        Total prestado
+                    </h6>
+
+                    <h3>
+                        Q @ViewBag.TotalPrestado.ToString("N2")
+                    </h3>
+
+                </div>
+
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <h6 class="text-muted">
+                        Capital pendiente
+                    </h6>
+
+                    <h3>
+                        Q @ViewBag.SaldoPendiente.ToString("N2")
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-4 mb-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <h6 class="text-muted">
+                        Total recibido
+                    </h6>
+
+                    <h3>
+                        Q @ViewBag.TotalPagos.ToString("N2")
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <hr />
+
+    <h4 class="mb-3">
+        Administración
+    </h4>
+
+    <div class="row">
+
+        <div class="col-md-3 mb-3">
+
+            <div class="card h-100">
+
+                <div class="card-body">
+
                     <h5>Clientes</h5>
-                    <p>Administrar clientes registrados.</p>
+
+                    <p>
+                        Registrar y administrar clientes.
+                    </p>
+
+                    <a asp-controller="Clientes"
+                       asp-action="Index"
+                       class="btn btn-primary">
+
+                        Ir a clientes
+
+                    </a>
+
                 </div>
+
             </div>
+
         </div>
 
-        <div class="col-md-4 mb-3">
-            <div class="card shadow-sm">
+        <div class="col-md-3 mb-3">
+
+            <div class="card h-100">
+
                 <div class="card-body">
+
                     <h5>Créditos</h5>
-                    <p>Consultar y administrar microcréditos.</p>
+
+                    <p>
+                        Gestionar créditos otorgados.
+                    </p>
+
+                    <a href="#"
+                       class="btn btn-outline-primary">
+
+                        Créditos
+
+                    </a>
+
                 </div>
+
             </div>
+
         </div>
 
-        <div class="col-md-4 mb-3">
-            <div class="card shadow-sm">
+        <div class="col-md-3 mb-3">
+
+            <div class="card h-100">
+
                 <div class="card-body">
+
                     <h5>Pagos</h5>
-                    <p>Consultar pagos y abonos.</p>
+
+                    <p>
+                        Consultar pagos y abonos.
+                    </p>
+
+                    <a href="#"
+                       class="btn btn-outline-primary">
+
+                        Pagos
+
+                    </a>
+
                 </div>
+
             </div>
+
+        </div>
+
+        <div class="col-md-3 mb-3">
+
+            <div class="card h-100">
+
+                <div class="card-body">
+
+                    <h5>Planes</h5>
+
+                    <p>
+                        Configurar planes de crédito.
+                    </p>
+
+                    <a href="#"
+                       class="btn btn-outline-primary">
+
+                        Planes
+
+                    </a>
+
+                </div>
+
+            </div>
+
         </div>
 
     </div>

@@ -49,48 +49,62 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
 
                     <!-- MENÚ IZQUIERDO -->
-                    <ul class="navbar-nav flex-grow-1">
+                   <ul class="navbar-nav flex-grow-1">
 
                         <li class="nav-item">
-
                             <a class="nav-link text-dark"
-                               asp-controller="Home"
-                               asp-action="Index">
-
+                            asp-controller="Home"
+                            asp-action="Index">
                                 Inicio
-
                             </a>
-
                         </li>
-
-                        @if (User.IsInRole("ADMINISTRADOR") ||
-                             User.IsInRole("CAJERO"))
-                        {
-                            <li class="nav-item">
-
-                                <a class="nav-link text-dark"
-                                   asp-controller="Clientes"
-                                   asp-action="Index">
-
-                                    Clientes
-
-                                </a>
-
-                            </li>
-                        }
 
                         @if (User.IsInRole("ADMINISTRADOR"))
                         {
                             <li class="nav-item">
-
                                 <a class="nav-link text-dark"
-                                   asp-controller="Admin"
-                                   asp-action="Index">
-
-                                    Administración
-
+                                asp-controller="Admin"
+                                asp-action="Index">
+                                    Dashboard
                                 </a>
+                            </li>
 
+                            <li class="nav-item">
+                                <a class="nav-link text-dark"
+                                asp-controller="Clientes"
+                                asp-action="Index">
+                                    Clientes
+                                </a>
+                            </li>
+                        }
+
+                        @if (User.IsInRole("CAJERO"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark"
+                                asp-controller="Cajero"
+                                asp-action="Index">
+                                    Dashboard
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link text-dark"
+                                asp-controller="Clientes"
+                                asp-action="Index">
+                                    Clientes
+                                </a>
+                            </li>
+                        }
+
+                        @if (User.IsInRole("CLIENTE"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark"
+                                asp-controller="Cliente"
+                                asp-action="Index">
+                                    Mi cuenta
+                                </a>
                             </li>
                         }
 
@@ -177,7 +191,7 @@
 
         <div class="container">
 
-            &copy; 2026 - SIGEMIC - Sistema de Gestión de Microcréditos
+            &copy; 2026 - SIGEMIC - Sistema de Gestión de Microcréditos - Base de Datos
 
         </div>
 

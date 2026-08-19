@@ -9,38 +9,53 @@ namespace SIGEMIC.Data
         public static async Task InicializarAsync(ApplicationDbContext context)
         {
             Console.WriteLine("Entrando a DbInitializer...");
-
-            bool existeAdmin = await context.Usuarios
-                .AnyAsync(u => u.Username == "admin");
-
+            var hasher = new PasswordHasher<Usuario>();
+            bool existeAdmin = await context.Usuarios.AnyAsync(u => u.Username == "admin");
             Console.WriteLine($"¿Existe admin?: {existeAdmin}");
 
-            if (existeAdmin)
+            if (!existeAdmin)
             {
-                return;
+                var admin = new Usuario
+                {
+                    Nombres = "Administrador",
+                    Apellidos = "SIGEMIC",
+                    Username = "admin",
+                    Rol = "ADMINISTRADOR",
+                    Estado = "ACTIVO",
+                    IntentosFallidos = 0,
+                    FechaCreacion = DateTime.Now
+                };
+
+                admin.PasswordHash = hasher.HashPassword(admin,"Admin123*");
+                context.Usuarios.Add(admin);
+                await context.SaveChangesAsync();
+                Console.WriteLine("Administrador creado correctamente.");
             }
 
-            var admin = new Usuario
+
+            bool existeCajero = await context.Usuarios.AnyAsync(u => u.Username == "cajero01");
+            Console.WriteLine($"¿Existe cajero?: {existeCajero}");
+            if (!existeCajero)
             {
-                Nombres = "Administrador",
-                Apellidos = "SIGEMIC",
-                Username = "admin",
-                Rol = "ADMINISTRADOR",
-                Estado = "ACTIVO",
-                IntentosFallidos = 0,
-                FechaCreacion = DateTime.Now
-            };
+                var cajero = new Usuario
+                {
+                    Nombres = "Cajero",
+                    Apellidos = "SIGEMIC",
+                    Username = "cajero01",
+                    Rol = "CAJERO",
+                    Estado = "ACTIVO",
+                    IntentosFallidos = 0,
+                    FechaCreacion = DateTime.Now
+                };
 
-            var hasher = new PasswordHasher<Usuario>();
+                cajero.PasswordHash = hasher.HashPassword(cajero,"Cajero123*");
+                context.Usuarios.Add(cajero);
+                await context.SaveChangesAsync();
+                Console.WriteLine("Cajero creado correctamente.");
+            }
 
-            admin.PasswordHash =
-                hasher.HashPassword(admin, "Admin123*");
-
-            context.Usuarios.Add(admin);
-
-            await context.SaveChangesAsync();
-
-            Console.WriteLine("Administrador creado correctamente.");
+            Console.WriteLine("DbInitializer finalizado."
+            );
         }
     }
 }

@@ -1,0 +1,183 @@
+@{
+    ViewData["Title"] = "Dashboard Cajero";
+}
+
+<div class="container mt-4">
+
+    <div class="mb-4">
+
+        <h2>Panel de Cajero</h2>
+
+        <p class="text-muted">
+            Bienvenido, @User.Identity?.Name
+        </p>
+
+    </div>
+
+    <div class="row">
+
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+
+                    <h6 class="text-muted">
+                        Clientes
+                    </h6>
+
+                    <h2>
+                        @ViewBag.TotalClientes
+                    </h2>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <h6 class="text-muted">
+                        Créditos activos
+                    </h6>
+
+                    <h2>
+                        @ViewBag.CreditosActivos
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-3 mb-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <h6 class="text-muted">
+                        Cuotas pendientes
+                    </h6>
+
+                    <h2>
+                        @ViewBag.CuotasPendientes
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-3 mb-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <h6 class="text-muted">
+                        Cobrado hoy
+                    </h6>
+
+                    <h3>
+                        Q @ViewBag.PagosHoy.ToString("N2")
+                    </h3>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <hr />
+
+    <h4 class="mb-3">
+        Operaciones
+    </h4>
+
+    <div class="row">
+
+        <div class="col-md-4 mb-3">
+
+            <div class="card h-100">
+
+                <div class="card-body">
+
+                    <h5>Clientes</h5>
+
+                    <p>
+                        Registrar y consultar clientes.
+                    </p>
+
+                    <a asp-controller="Clientes"
+                       asp-action="Index"
+                       class="btn btn-primary">
+
+                        Clientes
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-4 mb-3">
+
+            <div class="card h-100">
+
+                <div class="card-body">
+
+                    <h5>Registrar pago</h5>
+
+                    <p>
+                        Registrar pagos mensuales.
+                    </p>
+
+                    <a href="#"
+                       class="btn btn-outline-primary">
+
+                        Registrar pago
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-4 mb-3">
+
+            <div class="card h-100">
+
+                <div class="card-body">
+
+                    <h5>Estado de cuenta</h5>
+
+                    <p>
+                        Consultar créditos y cuotas.
+                    </p>
+
+                    <a href="#"
+                       class="btn btn-outline-primary">
+
+                        Consultar
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
