@@ -1,0 +1,185 @@
+@model IEnumerable<SIGEMIC.Models.Cuota>
+
+@{
+    ViewData["Title"] = "Cuotas del cliente";
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+
+            <h2>Cuotas pendientes</h2>
+
+            <p class="text-muted mb-0">
+
+                Cliente:
+
+                <strong>
+                    @ViewBag.CodigoCliente -
+                    @ViewBag.NombreCliente
+                </strong>
+
+            </p>
+
+        </div>
+
+                <div class="d-flex gap-2">
+
+                    @if (Model != null && Model.Any())
+                    {
+                        var primerCredito = Model.First().Credito;
+
+                        <a asp-controller="Pagos"
+                        asp-action="AbonoExtraordinario"
+                        asp-route-id="@primerCredito.IdCredito"
+                        class="btn btn-success">
+
+                            Abono a capital
+
+                        </a>
+                    }
+
+                    <a asp-controller="Pagos"
+                    asp-action="Index"
+                    class="btn btn-secondary">
+
+                        Cambiar cliente
+
+                    </a>
+
+                </div>
+
+    </div>
+
+
+    @if (TempData["MensajeExito"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+
+            @TempData["MensajeExito"]
+
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert">
+            </button>
+
+        </div>
+    }
+
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            @if (Model != null && Model.Any())
+            {
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle">
+
+                        <thead>
+
+                            <tr>
+                                <th>Crédito</th>
+                                <th>Cuota</th>
+                                <th>Vencimiento</th>
+                                <th>Capital</th>
+                                <th>Interés</th>
+                                <th>Saldo</th>
+                                <th>Estado</th>
+                                <th></th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            @foreach (var cuota in Model)
+                            {
+                                <tr>
+
+                                    <td>
+                                        @cuota.Credito.CodigoCredito
+                                    </td>
+
+                                    <td>
+                                        #@cuota.NumeroCuota
+                                    </td>
+
+                                    <td>
+                                        @cuota.FechaVencimiento.ToString("dd/MM/yyyy")
+                                    </td>
+
+                                    <td>
+                                        Q @((cuota.CapitalProgramado - cuota.CapitalPagado).ToString("N2"))
+                                    </td>
+
+                                    <td>
+                                        Q @((cuota.InteresProgramado - cuota.InteresPagado).ToString("N2"))
+                                    </td>
+
+                                    <td>
+                                        <strong>
+                                            Q @cuota.SaldoCuota.ToString("N2")
+                                        </strong>
+                                    </td>
+
+                                    <td>
+                                        @if (cuota.Estado == "ATRASADA")
+                                        {
+                                            <span class="badge bg-danger">
+                                                ATRASADA
+                                            </span>
+                                        }
+                                        else if (cuota.Estado == "PARCIAL")
+                                        {
+                                            <span class="badge bg-warning text-dark">
+                                                PARCIAL
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">
+                                                PENDIENTE
+                                            </span>
+                                        }
+                                    </td>
+
+                                    <td class="text-end">
+
+                                        <a asp-controller="Pagos"
+                                        asp-action="Registrar"
+                                        asp-route-id="@cuota.IdCuota"
+                                        class="btn btn-primary btn-sm">
+
+                                            Registrar pago
+
+                                        </a>
+
+                                    </td>
+
+                                </tr>
+                            }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-success mb-0">
+
+                    Este cliente no tiene cuotas pendientes.
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+
+</div>

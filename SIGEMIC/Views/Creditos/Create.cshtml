@@ -1,0 +1,187 @@
+@model SIGEMIC.Models.CrearCreditoViewModel
+
+@{
+    ViewData["Title"] = "Nuevo crédito";
+}
+
+<div class="container mt-4">
+
+    <div class="mb-4">
+        <h2>Nuevo crédito</h2>
+
+        <p class="text-muted">
+            Registro de un nuevo microcrédito.
+        </p>
+    </div>
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            <form asp-action="Create"
+                  method="post">
+
+                <div asp-validation-summary="ModelOnly"
+                     class="text-danger mb-3">
+                </div>
+
+                <div class="mb-3">
+
+                    <label asp-for="IdCliente"
+                           class="form-label">
+                        Cliente
+                    </label>
+
+                    <select asp-for="IdCliente"
+                            asp-items="Model.Clientes"
+                            class="form-select">
+
+                        <option value="">
+                            Seleccione un cliente
+                        </option>
+
+                    </select>
+
+                    <span asp-validation-for="IdCliente"
+                          class="text-danger">
+                    </span>
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label asp-for="IdPlan"
+                           class="form-label">
+                        Plan de crédito
+                    </label>
+
+                    <select asp-for="IdPlan"
+                            asp-items="Model.Planes"
+                            class="form-select">
+
+                        <option value="">
+                            Seleccione un plan
+                        </option>
+
+                    </select>
+
+                    <span asp-validation-for="IdPlan"
+                          class="text-danger">
+                    </span>
+
+                </div>
+
+                <div class="row">
+
+                    <div class="col-md-6 mb-3">
+
+                        <label asp-for="MontoOriginal"
+                               class="form-label">
+                            Monto solicitado
+                        </label>
+
+                        <input asp-for="MontoOriginal"
+                               type="number"
+                               step="0.01"
+                               min="1"
+                               class="form-control"
+                               placeholder="10000.00" />
+
+                        <span asp-validation-for="MontoOriginal"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+
+                        <label asp-for="PlazoMeses"
+                               class="form-label">
+                            Plazo
+                        </label>
+
+                        <select asp-for="PlazoMeses"
+                                class="form-select">
+
+                            <option value="">
+                                Seleccione
+                            </option>
+
+                            <option value="6">
+                                6 meses
+                            </option>
+
+                            <option value="12">
+                                12 meses
+                            </option>
+
+                            <option value="18">
+                                18 meses
+                            </option>
+
+                            <option value="24">
+                                24 meses
+                            </option>
+
+                            <option value="36">
+                                36 meses
+                            </option>
+
+                            <option value="48">
+                                48 meses
+                            </option>
+
+                            <option value="60">
+                                60 meses
+                            </option>
+
+                        </select>
+
+                        <span asp-validation-for="PlazoMeses"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                </div>
+
+                <div class="alert alert-info">
+
+                    La cuota mensual se calculará
+                    automáticamente según el monto,
+                    tasa y plazo seleccionados.
+
+                </div>
+
+                <div class="d-flex gap-2">
+
+                    <button type="submit"
+                            class="btn btn-primary">
+
+                        Calcular y otorgar crédito
+
+                    </button>
+
+                    <a asp-action="Index"
+                       class="btn btn-secondary">
+
+                        Cancelar
+
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts
+{
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

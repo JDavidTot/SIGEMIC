@@ -1,0 +1,141 @@
+@model IEnumerable<SIGEMIC.Models.Cuota>
+
+@{
+    ViewData["Title"] = "Mis cuotas";
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h2>Mis cuotas</h2>
+
+            <p class="text-muted mb-0">
+                Crédito:
+                <strong>@ViewBag.CodigoCredito</strong>
+            </p>
+        </div>
+
+        <a asp-controller="Cliente"
+           asp-action="Index"
+           class="btn btn-secondary">
+            Volver a mi cuenta
+        </a>
+
+    </div>
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            @if (Model != null && Model.Any())
+            {
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle">
+
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Vencimiento</th>
+                                <th>Capital</th>
+                                <th>Interés</th>
+                                <th>Cuota</th>
+                                <th>Pagado</th>
+                                <th>Saldo</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            @foreach (var cuota in Model)
+                            {
+                                var pagado =
+                                    cuota.CapitalPagado +
+                                    cuota.InteresPagado +
+                                    cuota.MoraPagada;
+
+                                <tr>
+
+                                    <td>
+                                        @cuota.NumeroCuota
+                                    </td>
+
+                                    <td>
+                                        @cuota.FechaVencimiento.ToString("dd/MM/yyyy")
+                                    </td>
+
+                                    <td>
+                                        Q @cuota.CapitalProgramado.ToString("N2")
+                                    </td>
+
+                                    <td>
+                                        Q @cuota.InteresProgramado.ToString("N2")
+                                    </td>
+
+                                    <td>
+                                        <strong>
+                                            Q @cuota.CuotaProgramada.ToString("N2")
+                                        </strong>
+                                    </td>
+
+                                    <td>
+                                        Q @pagado.ToString("N2")
+                                    </td>
+
+                                    <td>
+                                        Q @cuota.SaldoCuota.ToString("N2")
+                                    </td>
+
+                                    <td>
+
+                                        @if (cuota.Estado == "PAGADA")
+                                        {
+                                            <span class="badge bg-success">
+                                                PAGADA
+                                            </span>
+                                        }
+                                        else if (cuota.Estado == "PARCIAL")
+                                        {
+                                            <span class="badge bg-warning text-dark">
+                                                PARCIAL
+                                            </span>
+                                        }
+                                        else if (cuota.Estado == "ATRASADA")
+                                        {
+                                            <span class="badge bg-danger">
+                                                ATRASADA
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">
+                                                PENDIENTE
+                                            </span>
+                                        }
+
+                                    </td>
+
+                                </tr>
+                            }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info mb-0">
+                    No existen cuotas registradas para este crédito.
+                </div>
+            }
+
+        </div>
+
+    </div>
+
+</div>

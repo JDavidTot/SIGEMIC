@@ -1,0 +1,124 @@
+@model IEnumerable<SIGEMIC.Models.Cliente>
+
+@{
+    ViewData["Title"] = "Registrar pagos";
+}
+
+<div class="container mt-4">
+
+    <div class="mb-4">
+
+        <h2>Registrar pago</h2>
+
+        <p class="text-muted">
+            Seleccione el cliente que realizará el pago.
+        </p>
+
+    </div>
+
+    @if (TempData["MensajeExito"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+
+            @TempData["MensajeExito"]
+
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert">
+            </button>
+
+        </div>
+    }
+
+    @if (TempData["MensajeError"] != null)
+    {
+        <div class="alert alert-danger">
+
+            @TempData["MensajeError"]
+
+        </div>
+    }
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            @if (Model != null && Model.Any())
+            {
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle">
+
+                        <thead>
+
+                            <tr>
+                                <th>Código</th>
+                                <th>Cliente</th>
+                                <th>Usuario</th>
+                                <th>Estado</th>
+                                <th></th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            @foreach (var cliente in Model)
+                            {
+                                <tr>
+
+                                    <td>
+                                        @cliente.CodigoCliente
+                                    </td>
+
+                                    <td>
+                                        @cliente.Usuario.Nombres
+                                        @cliente.Usuario.Apellidos
+                                    </td>
+
+                                    <td>
+                                        @cliente.Usuario.Username
+                                    </td>
+
+                                    <td>
+                                        <span class="badge bg-success">
+                                            @cliente.Estado
+                                        </span>
+                                    </td>
+
+                                    <td class="text-end">
+
+                                        <a asp-controller="Pagos"
+                                           asp-action="CuotasCliente"
+                                           asp-route-id="@cliente.IdCliente"
+                                           class="btn btn-primary btn-sm">
+
+                                            Ver cuotas
+
+                                        </a>
+
+                                    </td>
+
+                                </tr>
+                            }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info mb-0">
+
+                    No existen clientes con créditos activos.
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+
+</div>

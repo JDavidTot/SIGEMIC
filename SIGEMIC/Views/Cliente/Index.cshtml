@@ -247,10 +247,13 @@
 
                     @if (tieneCredito)
                     {
-                        <a href="#"
-                           class="btn btn-outline-primary">
-                            Ver cuotas
-                        </a>
+                        <a asp-controller="Cliente"
+                            asp-action="Cuotas"
+                            class="btn btn-outline-primary">
+
+                                Ver cuotas
+
+                             </a>
                     }
                     else
                     {
@@ -280,10 +283,13 @@
 
                     @if (tieneCredito)
                     {
-                        <a href="#"
-                           class="btn btn-outline-primary">
-                            Ver pagos
-                        </a>
+                        <a asp-controller="Cliente"
+                            asp-action="EstadoCuenta"
+                            class="btn btn-outline-primary">
+
+                                Ver estado de cuenta
+
+                            </a>
                     }
                     else
                     {

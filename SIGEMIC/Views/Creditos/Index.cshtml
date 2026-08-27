@@ -1,0 +1,128 @@
+@model IEnumerable<SIGEMIC.Models.Credito>
+
+@{
+    ViewData["Title"] = "Créditos";
+}
+
+@if (TempData["MensajeExito"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show"
+         role="alert">
+
+        @TempData["MensajeExito"]
+
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="alert">
+        </button>
+
+    </div>
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h2>Créditos</h2>
+
+            <p class="text-muted">
+                Administración de microcréditos otorgados.
+            </p>
+        </div>
+
+        <a asp-action="Create"
+           class="btn btn-primary">
+            Nuevo crédito
+        </a>
+
+    </div>
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle">
+
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Cliente</th>
+                            <th>Plan</th>
+                            <th>Monto</th>
+                            <th>Plazo</th>
+                            <th>Cuota</th>
+                            <th>Saldo</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        @if (Model.Any())
+                        {
+                            @foreach (var credito in Model)
+                            {
+                                <tr>
+
+                                    <td>
+                                        @credito.CodigoCredito
+                                    </td>
+
+                                    <td>
+                                        @credito.Cliente.Usuario.Nombres
+                                        @credito.Cliente.Usuario.Apellidos
+                                    </td>
+
+                                    <td>
+                                        @credito.PlanCredito.Nombre
+                                    </td>
+
+                                    <td>
+                                        Q @credito.MontoOriginal.ToString("N2")
+                                    </td>
+
+                                    <td>
+                                        @credito.PlazoMeses meses
+                                    </td>
+
+                                    <td>
+                                        Q @credito.CuotaOriginal.ToString("N2")
+                                    </td>
+
+                                    <td>
+                                        Q @credito.SaldoCapital.ToString("N2")
+                                    </td>
+
+                                    <td>
+                                        @credito.Estado
+                                    </td>
+
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="8"
+                                    class="text-center text-muted">
+
+                                    No existen créditos registrados.
+
+                                </td>
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

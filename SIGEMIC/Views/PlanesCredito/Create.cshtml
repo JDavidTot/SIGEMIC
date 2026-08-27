@@ -1,0 +1,140 @@
+@model SIGEMIC.Models.PlanCredito
+
+@{
+    ViewData["Title"] = "Nuevo plan";
+}
+
+<div class="container mt-4">
+
+    <div class="mb-4">
+
+        <h2>Nuevo plan de crédito</h2>
+
+        <p class="text-muted">
+            Configuración de tasa para nuevos créditos.
+        </p>
+
+    </div>
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            <form asp-action="Create"
+                  method="post">
+
+                <div asp-validation-summary="ModelOnly"
+                     class="text-danger mb-3">
+                </div>
+
+
+                <div class="mb-3">
+
+                    <label asp-for="Nombre"
+                           class="form-label">
+                        Nombre del plan
+                    </label>
+
+                    <input asp-for="Nombre"
+                           class="form-control"
+                           placeholder="Ej. Microcrédito Personal" />
+
+                    <span asp-validation-for="Nombre"
+                          class="text-danger">
+                    </span>
+
+                </div>
+
+
+                <div class="mb-3">
+
+                    <label asp-for="Descripcion"
+                           class="form-label">
+                        Descripción
+                    </label>
+
+                    <textarea asp-for="Descripcion"
+                              class="form-control"
+                              rows="3">
+                    </textarea>
+
+                </div>
+
+
+                <div class="row">
+
+                    <div class="col-md-6 mb-3">
+
+                        <label asp-for="TipoTasa"
+                               class="form-label">
+                            Tipo de tasa
+                        </label>
+
+                        <select asp-for="TipoTasa"
+                                class="form-select">
+
+                            <option value="">
+                                Seleccione
+                            </option>
+
+                            <option value="ANUAL">
+                                Anual
+                            </option>
+
+                            <option value="MENSUAL">
+                                Mensual
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="col-md-6 mb-3">
+
+                        <label asp-for="PorcentajeInteres"
+                               class="form-label">
+                            Porcentaje de interés
+                        </label>
+
+                        <input asp-for="PorcentajeInteres"
+                               type="number"
+                               step="0.0001"
+                               min="0.0001"
+                               max="100"
+                               class="form-control"
+                               placeholder="18.00" />
+
+                    </div>
+
+                </div>
+
+
+                <div class="d-flex gap-2">
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Guardar plan
+                    </button>
+
+                    <a asp-action="Index"
+                       class="btn btn-secondary">
+                        Cancelar
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts
+{
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

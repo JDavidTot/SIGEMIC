@@ -1,0 +1,333 @@
+@model SIGEMIC.Models.EstadoCuentaViewModel
+
+@{
+    ViewData["Title"] = "Estado de cuenta";
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h2>Estado de cuenta</h2>
+
+            <p class="text-muted mb-0">
+                Cliente:
+                <strong>@Model.CodigoCliente</strong>
+                |
+                Crédito:
+                <strong>@Model.CodigoCredito</strong>
+            </p>
+        </div>
+
+        <a asp-controller="Cliente"
+           asp-action="Index"
+           class="btn btn-secondary">
+
+            Volver a mi cuenta
+
+        </a>
+
+    </div>
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Monto original
+                    </small>
+
+                    <h4 class="mb-0">
+                        Q @Model.MontoOriginal.ToString("N2")
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Saldo de capital
+                    </small>
+
+                    <h4 class="mb-0">
+                        Q @Model.SaldoCapital.ToString("N2")
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Cuota
+                    </small>
+
+                    <h4 class="mb-0">
+                        Q @Model.CuotaOriginal.ToString("N2")
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Estado
+                    </small>
+
+                    <h4 class="mb-0">
+
+                        @if (Model.EstadoCredito == "ACTIVO")
+                        {
+                            <span class="badge bg-success">
+                                ACTIVO
+                            </span>
+                        }
+                        else if (Model.EstadoCredito == "ATRASADO")
+                        {
+                            <span class="badge bg-danger">
+                                ATRASADO
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">
+                                @Model.EstadoCredito
+                            </span>
+                        }
+
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Total entregado
+                    </small>
+
+                    <h4>
+                        Q @Model.TotalPagado.ToString("N2")
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Capital aplicado
+                    </small>
+
+                    <h4>
+                        Q @Model.TotalCapitalPagado.ToString("N2")
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Abonos extraordinarios
+                    </small>
+
+                    <h4>
+                        Q @Model.TotalAbonosExtraordinarios.ToString("N2")
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="card shadow-sm">
+
+        <div class="card-header bg-white">
+
+            <h5 class="mb-0">
+                Historial de movimientos
+            </h5>
+
+        </div>
+
+        <div class="card-body">
+
+            @if (Model.Pagos.Any())
+            {
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle">
+
+                        <thead>
+
+                            <tr>
+                                <th>Recibo</th>
+                                <th>Fecha</th>
+                                <th>Operación</th>
+                                <th>Cuota</th>
+                                <th>Forma</th>
+                                <th>Capital</th>
+                                <th>Interés</th>
+                                <th>Total</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            @foreach (var pago in Model.Pagos)
+                            {
+                                <tr>
+
+                                    <td>
+                                        <strong>
+                                            @pago.NumeroRecibo
+                                        </strong>
+                                    </td>
+
+                                    <td>
+                                        @pago.FechaPago.ToString("dd/MM/yyyy HH:mm")
+                                    </td>
+
+                                    <td>
+
+                                        @if (pago.TipoOperacion ==
+                                            "ABONO_EXTRAORDINARIO")
+                                        {
+                                            <span class="badge bg-success">
+                                                ABONO A CAPITAL
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-primary">
+                                                PAGO DE CUOTA
+                                            </span>
+                                        }
+
+                                    </td>
+
+                                    <td>
+
+                                        @if (pago.NumeroCuota.HasValue)
+                                        {
+                                            <span>
+                                                #@pago.NumeroCuota
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">
+                                                —
+                                            </span>
+                                        }
+
+                                    </td>
+
+                                    <td>
+                                        @pago.FormaPago
+                                    </td>
+
+                                    <td>
+                                        Q @pago.CapitalAplicado.ToString("N2")
+                                    </td>
+
+                                    <td>
+                                        Q @pago.InteresAplicado.ToString("N2")
+                                    </td>
+
+                                    <td>
+                                        <strong>
+                                            Q @pago.MontoTotal.ToString("N2")
+                                        </strong>
+                                    </td>
+
+                                </tr>
+                            }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info mb-0">
+
+                    Todavía no existen pagos registrados
+                    para este crédito.
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+
+</div>

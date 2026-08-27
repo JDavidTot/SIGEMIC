@@ -1,0 +1,259 @@
+@model SIGEMIC.Models.RegistrarPagoViewModel
+
+@{
+    ViewData["Title"] = "Registrar pago";
+}
+
+<div class="container mt-4">
+
+    <div class="mb-4">
+
+        <h2>Registrar pago</h2>
+
+        <p class="text-muted">
+            Puede registrar el pago completo o parcial de la cuota.
+        </p>
+
+    </div>
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            <form asp-action="Registrar"
+                  method="post">
+
+                <input asp-for="IdCuota"
+                       type="hidden" />
+
+                <div asp-validation-summary="ModelOnly"
+                     class="text-danger mb-3">
+                </div>
+
+                <div class="row">
+
+                    <div class="col-md-6 mb-3">
+
+                        <label class="form-label">
+                            Cliente
+                        </label>
+
+                        <input value="@Model.Cliente"
+                               class="form-control"
+                               readonly />
+
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+
+                        <label class="form-label">
+                            Crédito
+                        </label>
+
+                        <input value="@Model.CodigoCredito"
+                               class="form-control"
+                               readonly />
+
+                    </div>
+
+                </div>
+
+                <div class="row">
+
+                    <div class="col-md-4 mb-3">
+
+                        <label class="form-label">
+                            Cuota
+                        </label>
+
+                        <input value="#@Model.NumeroCuota"
+                               class="form-control"
+                               readonly />
+
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+
+                        <label class="form-label">
+                            Vencimiento
+                        </label>
+
+                        <input value="@Model.FechaVencimiento.ToString("dd/MM/yyyy")"
+                               class="form-control"
+                               readonly />
+
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+
+                        <label class="form-label">
+                            Saldo de la cuota
+                        </label>
+
+                        <input value="Q @Model.TotalPagar.ToString("N2")"
+                               class="form-control fw-bold"
+                               readonly />
+
+                    </div>
+
+                </div>
+
+                <div class="row">
+
+                    <div class="col-md-4 mb-3">
+
+                        <label class="form-label">
+                            Capital pendiente
+                        </label>
+
+                        <input value="Q @Model.CapitalPendiente.ToString("N2")"
+                               class="form-control"
+                               readonly />
+
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+
+                        <label class="form-label">
+                            Interés pendiente
+                        </label>
+
+                        <input value="Q @Model.InteresPendiente.ToString("N2")"
+                               class="form-control"
+                               readonly />
+
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+
+                        <label class="form-label">
+                            Mora
+                        </label>
+
+                        <input value="Q @Model.MoraPendiente.ToString("N2")"
+                               class="form-control"
+                               readonly />
+
+                    </div>
+
+                </div>
+
+                <hr />
+
+                <div class="row">
+
+                    <div class="col-md-6 mb-3">
+
+                        <label asp-for="MontoPago"
+                               class="form-label">
+                        </label>
+
+                        <div class="input-group">
+
+                            <span class="input-group-text">
+                                Q
+                            </span>
+
+                            <input asp-for="MontoPago"
+                                   type="number"
+                                   step="0.01"
+                                   min="0.01"
+                                   class="form-control" />
+
+                        </div>
+
+                        <span asp-validation-for="MontoPago"
+                              class="text-danger">
+                        </span>
+
+                        <small class="text-muted">
+                            Puede ingresar el monto completo o una cantidad menor.
+                        </small>
+
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+
+                        <label asp-for="IdFormaPago"
+                               class="form-label">
+                        </label>
+
+                        <select asp-for="IdFormaPago"
+                                asp-items="Model.FormasPago"
+                                class="form-select">
+
+                            <option value="">
+                                Seleccione una forma de pago
+                            </option>
+
+                        </select>
+
+                        <span asp-validation-for="IdFormaPago"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label asp-for="Observacion"
+                           class="form-label">
+                    </label>
+
+                    <textarea asp-for="Observacion"
+                              class="form-control"
+                              rows="3">
+                    </textarea>
+
+                </div>
+
+                <div class="alert alert-info">
+
+                    El pago se aplicará primero al
+                    <strong>interés pendiente</strong>
+                    y después al
+                    <strong>capital</strong>.
+
+                    Si no se cubre el total, la cuota quedará como
+                    <strong>PARCIAL</strong>.
+
+                </div>
+
+                <div class="d-flex gap-2">
+
+                    <button type="submit"
+                            class="btn btn-success">
+
+                        Registrar pago
+
+                    </button>
+
+                    <a asp-controller="Pagos"
+                       asp-action="CuotasCliente"
+                       asp-route-id="@ViewBag.IdCliente"
+                       class="btn btn-secondary">
+
+                        Cancelar
+
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts
+{
+    @{
+        await Html.RenderPartialAsync(
+            "_ValidationScriptsPartial"
+        );
+    }
+}

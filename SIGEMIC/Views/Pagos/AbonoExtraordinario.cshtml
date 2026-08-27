@@ -1,0 +1,213 @@
+@model SIGEMIC.Models.AbonoExtraordinarioViewModel
+
+@{
+    ViewData["Title"] = "Abono extraordinario";
+}
+
+<div class="container mt-4">
+
+    <div class="mb-4">
+
+        <h2>Abono extraordinario a capital</h2>
+
+        <p class="text-muted">
+            El abono reducirá directamente el saldo del crédito y disminuirá el plazo restante.
+        </p>
+
+    </div>
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            <form asp-action="AbonoExtraordinario"
+                  method="post">
+
+                <input asp-for="IdCredito"
+                       type="hidden" />
+
+                <div asp-validation-summary="ModelOnly"
+                     class="text-danger mb-3">
+                </div>
+
+                <div class="row">
+
+                    <div class="col-md-6 mb-3">
+
+                        <label class="form-label">
+                            Cliente
+                        </label>
+
+                        <input value="@Model.Cliente"
+                               class="form-control"
+                               readonly />
+
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+
+                        <label class="form-label">
+                            Crédito
+                        </label>
+
+                        <input value="@Model.CodigoCredito"
+                               class="form-control"
+                               readonly />
+
+                    </div>
+
+                </div>
+
+                <div class="row">
+
+                    <div class="col-md-4 mb-3">
+
+                        <label class="form-label">
+                            Saldo de capital
+                        </label>
+
+                        <input value="Q @Model.SaldoCapital.ToString("N2")"
+                               class="form-control fw-bold"
+                               readonly />
+
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+
+                        <label class="form-label">
+                            Cuota actual
+                        </label>
+
+                        <input value="Q @Model.CuotaActual.ToString("N2")"
+                               class="form-control"
+                               readonly />
+
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+
+                        <label class="form-label">
+                            Plazo original
+                        </label>
+
+                        <input value="@Model.PlazoOriginal meses"
+                               class="form-control"
+                               readonly />
+
+                    </div>
+
+                </div>
+
+                <hr />
+
+                <div class="row">
+
+                    <div class="col-md-6 mb-3">
+
+                        <label asp-for="MontoAbono"
+                               class="form-label">
+                        </label>
+
+                        <div class="input-group">
+
+                            <span class="input-group-text">
+                                Q
+                            </span>
+
+                            <input asp-for="MontoAbono"
+                                   type="number"
+                                   step="0.01"
+                                   min="0.01"
+                                   class="form-control" />
+
+                        </div>
+
+                        <span asp-validation-for="MontoAbono"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+
+                        <label asp-for="IdFormaPago"
+                               class="form-label">
+                        </label>
+
+                        <select asp-for="IdFormaPago"
+                                asp-items="Model.FormasPago"
+                                class="form-select">
+
+                            <option value="">
+                                Seleccione una forma de pago
+                            </option>
+
+                        </select>
+
+                        <span asp-validation-for="IdFormaPago"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label asp-for="Observacion"
+                           class="form-label">
+                    </label>
+
+                    <textarea asp-for="Observacion"
+                              rows="3"
+                              class="form-control">
+                    </textarea>
+
+                </div>
+
+                <div class="alert alert-info">
+
+                    <strong>¿Qué hará SIGEMIC?</strong>
+
+                    El monto será aplicado completamente a capital.
+                    Se mantendrá aproximadamente la misma cuota mensual
+                    y se eliminarán cuotas futuras que ya no sean
+                    necesarias, reduciendo el plazo del crédito.
+
+                </div>
+
+                <div class="d-flex gap-2">
+
+                    <button type="submit"
+                            class="btn btn-success">
+
+                        Registrar abono
+
+                    </button>
+
+                    <a asp-controller="Pagos"
+                       asp-action="Index"
+                       class="btn btn-secondary">
+
+                        Cancelar
+
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts
+{
+    @{
+        await Html.RenderPartialAsync(
+            "_ValidationScriptsPartial"
+        );
+    }
+}
