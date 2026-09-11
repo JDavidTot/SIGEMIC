@@ -1355,5 +1355,84 @@ namespace SIGEMIC.Controllers
 
             model.PlazoOriginal = credito.PlazoMeses;
         }
+
+            public async Task<IActionResult> Historial(
+            string? cliente,
+            string? recibo,
+            string? credito,
+            string? tipoOperacion)
+        {
+            var consulta = _context.Pagos
+                .Include(p => p.Credito)
+                    .ThenInclude(c => c.Cliente)
+                        .ThenInclude(c => c.Usuario)
+                .Include(p => p.Cuota)
+                .Include(p => p.FormaPago)
+                .Include(p => p.Usuario)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(cliente))
+            {
+                string textoCliente =
+                    cliente.Trim();
+
+                consulta = consulta.Where(p =>
+                    p.Credito.Cliente.Usuario.Nombres.Contains(textoCliente) ||
+                    p.Credito.Cliente.Usuario.Apellidos.Contains(textoCliente) ||
+                    p.Credito.Cliente.CodigoCliente.Contains(textoCliente)
+                );
+            }
+
+            if (!string.IsNullOrWhiteSpace(recibo))
+            {
+                string textoRecibo =
+                    recibo.Trim();
+
+                consulta = consulta.Where(p =>
+                    p.NumeroRecibo.Contains(textoRecibo)
+                );
+            }
+
+
+            if (!string.IsNullOrWhiteSpace(credito))
+            {
+                string textoCredito =
+                    credito.Trim();
+
+                consulta = consulta.Where(p =>
+                    p.Credito.CodigoCredito.Contains(textoCredito)
+                );
+            }
+
+
+            if (!string.IsNullOrWhiteSpace(tipoOperacion))
+            {
+                consulta = consulta.Where(p =>
+                    p.TipoOperacion == tipoOperacion
+                );
+            }
+
+
+            var pagos = await consulta
+                .OrderByDescending(p => p.FechaPago)
+                .ThenByDescending(p => p.IdPago)
+                .ToListAsync();
+
+
+
+            ViewBag.Cliente =
+                cliente;
+
+            ViewBag.Recibo =
+                recibo;
+
+            ViewBag.Credito =
+                credito;
+
+            ViewBag.TipoOperacion =
+                tipoOperacion;
+
+            return View(pagos);
+        }
     }
 }

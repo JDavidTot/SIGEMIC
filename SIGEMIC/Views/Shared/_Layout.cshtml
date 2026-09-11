@@ -1,12 +1,17 @@
 ﻿<!DOCTYPE html>
+
 <html lang="es">
+
 <head>
+
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>@ViewData["Title"] - SIGEMIC</title>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
 
-    <script type="importmap"></script>
+    <title>
+        @ViewData["Title"] - SIGEMIC
+    </title>
 
     <link rel="stylesheet"
           href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
@@ -18,151 +23,330 @@
     <link rel="stylesheet"
           href="~/SIGEMIC.styles.css"
           asp-append-version="true" />
+
 </head>
 
-<body>
+
+<body class="bg-light">
+
+    <!-- =====================================================
+         BARRA SUPERIOR
+         ===================================================== -->
 
     <header>
 
-        <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
 
-            <div class="container-fluid">
+            <div class="container">
 
-                <a class="navbar-brand"
+                <!-- LOGO / NOMBRE -->
+                <a class="navbar-brand fw-bold"
                    asp-controller="Home"
                    asp-action="Index">
+
                     SIGEMIC
+
                 </a>
 
+
+                <!-- BOTÓN MÓVIL -->
                 <button class="navbar-toggler"
                         type="button"
                         data-bs-toggle="collapse"
-                        data-bs-target=".navbar-collapse"
-                        aria-controls="navbarSupportedContent"
+                        data-bs-target="#menuPrincipal"
+                        aria-controls="menuPrincipal"
                         aria-expanded="false"
-                        aria-label="Mostrar navegación">
+                        aria-label="Menú">
 
                     <span class="navbar-toggler-icon"></span>
 
                 </button>
 
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
 
-                    <!-- MENÚ IZQUIERDO -->
-                   <ul class="navbar-nav flex-grow-1">
+                <div class="collapse navbar-collapse"
+                     id="menuPrincipal">
 
+                    <!-- =================================================
+                         MENÚ IZQUIERDO
+                         ================================================= -->
+
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+
+                        <!-- INICIO -->
                         <li class="nav-item">
-                            <a class="nav-link text-dark"
-                            asp-controller="Home"
-                            asp-action="Index">
+
+                            <a class="nav-link"
+                               asp-controller="Home"
+                               asp-action="Index">
+
                                 Inicio
+
                             </a>
+
                         </li>
 
-                        @if (User.IsInRole("ADMINISTRADOR"))
+
+                        @if (User.Identity?.IsAuthenticated == true)
                         {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark"
-                                asp-controller="Admin"
-                                asp-action="Index">
-                                    Dashboard
-                                </a>
-                            </li>
+                            <!-- =========================================
+                                 ADMINISTRADOR
+                                 ========================================= -->
 
-                            <li class="nav-item">
-                                <a class="nav-link text-dark"
-                                asp-controller="Clientes"
-                                asp-action="Index">
-                                    Clientes
-                                </a>
-                            </li>
-                        }
+                            @if (User.IsInRole("ADMINISTRADOR"))
+                            {
+                                <li class="nav-item">
 
-                        @if (User.IsInRole("CAJERO"))
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark"
-                                asp-controller="Cajero"
-                                asp-action="Index">
-                                    Dashboard
-                                </a>
-                            </li>
+                                    <a class="nav-link"
+                                       asp-controller="Admin"
+                                       asp-action="Index">
 
-                            <li class="nav-item">
-                                <a class="nav-link text-dark"
-                                asp-controller="Clientes"
-                                asp-action="Index">
-                                    Clientes
-                                </a>
-                            </li>
-                        }
+                                        Dashboard
 
-                        @if (User.IsInRole("CLIENTE"))
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark"
-                                asp-controller="Cliente"
-                                asp-action="Index">
-                                    Mi cuenta
-                                </a>
-                            </li>
+                                    </a>
+
+                                </li>
+
+
+                                <li class="nav-item">
+
+                                    <a class="nav-link"
+                                       asp-controller="Clientes"
+                                       asp-action="Index">
+
+                                        Clientes
+
+                                    </a>
+
+                                </li>
+
+
+                                <li class="nav-item">
+
+                                    <a class="nav-link"
+                                       asp-controller="Creditos"
+                                       asp-action="Index">
+
+                                        Créditos
+
+                                    </a>
+
+                                </li>
+
+
+                                <li class="nav-item">
+
+                                    <a class="nav-link"
+                                       asp-controller="PlanesCredito"
+                                       asp-action="Index">
+
+                                        Planes
+
+                                    </a>
+
+                                </li>
+
+
+                                <li class="nav-item">
+
+                                    <a class="nav-link"
+                                       asp-controller="Pagos"
+                                       asp-action="Index">
+
+                                        Pagos
+
+                                    </a>
+
+                                </li>
+
+
+                                <li class="nav-item">
+
+                                    <a class="nav-link"
+                                       asp-controller="Pagos"
+                                       asp-action="Historial">
+
+                                        Historial
+
+                                    </a>
+
+                                </li>
+
+
+                                <li class="nav-item">
+
+                                    <a class="nav-link disabled"
+                                       href="#">
+
+                                        Auditoría
+
+                                    </a>
+
+                                </li>
+                            }
+
+
+                            else if (User.IsInRole("CAJERO"))
+                            {
+                                <li class="nav-item">
+
+                                    <a class="nav-link"
+                                       asp-controller="Cajero"
+                                       asp-action="Index">
+
+                                        Dashboard
+
+                                    </a>
+
+                                </li>
+
+
+                                <li class="nav-item">
+
+                                    <a class="nav-link"
+                                       asp-controller="Clientes"
+                                       asp-action="Index">
+
+                                        Clientes
+
+                                    </a>
+
+                                </li>
+
+
+                                <li class="nav-item">
+
+                                    <a class="nav-link"
+                                       asp-controller="Creditos"
+                                       asp-action="Index">
+
+                                        Créditos
+
+                                    </a>
+
+                                </li>
+
+
+                                <li class="nav-item">
+
+                                    <a class="nav-link"
+                                       asp-controller="Pagos"
+                                       asp-action="Index">
+
+                                        Registrar pago
+
+                                    </a>
+
+                                </li>
+
+
+                                <li class="nav-item">
+
+                                    <a class="nav-link"
+                                       asp-controller="Pagos"
+                                       asp-action="Historial">
+
+                                        Historial
+
+                                    </a>
+
+                                </li>
+                            }
+
+
+                            else if (User.IsInRole("CLIENTE"))
+                            {
+                                <li class="nav-item">
+
+                                    <a class="nav-link"
+                                       asp-controller="Cliente"
+                                       asp-action="Index">
+
+                                        Mi cuenta
+
+                                    </a>
+
+                                </li>
+
+
+                                <li class="nav-item">
+
+                                    <a class="nav-link"
+                                       asp-controller="Cliente"
+                                       asp-action="Credito">
+
+                                        Mi crédito
+
+                                    </a>
+
+                                </li>
+
+
+                                <li class="nav-item">
+
+                                    <a class="nav-link"
+                                       asp-controller="Cliente"
+                                       asp-action="Cuotas">
+
+                                        Mis cuotas
+
+                                    </a>
+
+                                </li>
+
+
+                                <li class="nav-item">
+
+                                    <a class="nav-link"
+                                       asp-controller="Cliente"
+                                       asp-action="EstadoCuenta">
+
+                                        Mis pagos
+
+                                    </a>
+
+                                </li>
+                            }
                         }
 
                     </ul>
 
-                    <!-- MENÚ DERECHO -->
-                    <ul class="navbar-nav">
 
-                        @if (User.Identity != null &&
-                             User.Identity.IsAuthenticated)
-                        {
-                            <li class="nav-item">
+                    <!-- =================================================
+                         USUARIO / CERRAR SESIÓN
+                         ================================================= -->
 
-                                <span class="nav-link text-dark">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <div class="d-flex align-items-center gap-3">
 
-                                    Usuario:
-                                    <strong>
-                                        @User.Identity.Name
-                                    </strong>
+                            <span class="navbar-text text-white">
 
-                                </span>
+                                Usuario:
+                                <strong>
+                                    @User.Identity.Name
+                                </strong>
 
-                            </li>
+                            </span>
 
-                            <li class="nav-item">
 
-                                <form asp-controller="Account"
-                                      asp-action="Logout"
-                                      method="post"
-                                      class="d-inline">
+                            <form asp-controller="Account"
+                                  asp-action="Logout"
+                                  method="post"
+                                  class="m-0">
 
-                                    <button type="submit"
-                                            class="btn btn-link nav-link text-dark">
+                                @Html.AntiForgeryToken()
 
-                                        Cerrar sesión
+                                <button type="submit"
+                                        class="btn btn-outline-light btn-sm">
 
-                                    </button>
+                                    Cerrar sesión
 
-                                </form>
+                                </button>
 
-                            </li>
-                        }
-                        else
-                        {
-                            <li class="nav-item">
+                            </form>
 
-                                <a class="nav-link text-dark"
-                                   asp-controller="Account"
-                                   asp-action="Login">
-
-                                    Iniciar sesión
-
-                                </a>
-
-                            </li>
-                        }
-
-                    </ul>
+                        </div>
+                    }
 
                 </div>
 
@@ -172,32 +356,43 @@
 
     </header>
 
-    <!-- CONTENIDO PRINCIPAL -->
 
-    <div class="container">
+    <!-- =====================================================
+         CONTENIDO
+         ===================================================== -->
 
-        <main role="main"
-              class="pb-3">
+    <main role="main"
+          class="pb-5">
 
-            @RenderBody()
+        @RenderBody()
 
-        </main>
+    </main>
 
-    </div>
 
-    <!-- PIE DE PÁGINA -->
+    <!-- =====================================================
+         PIE DE PÁGINA
+         ===================================================== -->
 
-    <footer class="border-top footer text-muted">
+    <footer class="border-top bg-white text-muted py-3 mt-auto">
 
-        <div class="container">
+        <div class="container text-center">
 
-            &copy; 2026 - SIGEMIC - Sistema de Gestión de Microcréditos - Base de Datos
+            © 2026 - SIGEMIC
+
+            <span class="mx-1">
+                |
+            </span>
+
+            Sistema de Gestión de Microcréditos
 
         </div>
 
     </footer>
 
-    <!-- SCRIPTS -->
+
+    <!-- =====================================================
+         SCRIPTS
+         ===================================================== -->
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
 
@@ -207,7 +402,11 @@
             asp-append-version="true">
     </script>
 
-    @await RenderSectionAsync("Scripts",required: false)
+    @await RenderSectionAsync(
+        "Scripts",
+        required: false
+    )
 
 </body>
+
 </html>

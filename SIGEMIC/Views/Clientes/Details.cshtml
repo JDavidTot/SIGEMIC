@@ -1,0 +1,354 @@
+@model SIGEMIC.Models.Cliente
+
+@{
+    ViewData["Title"] = "Detalle del cliente";
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+
+            <h2>Detalle del cliente</h2>
+
+            <p class="text-muted mb-0">
+                @Model.CodigoCliente
+            </p>
+
+        </div>
+
+        <div class="d-flex gap-2">
+
+            <a asp-action="Edit"
+               asp-route-id="@Model.IdCliente"
+               class="btn btn-primary">
+
+                Editar
+
+            </a>
+
+            <a asp-action="Index"
+               class="btn btn-secondary">
+
+                Volver
+
+            </a>
+
+        </div>
+
+    </div>
+
+
+    @if (TempData["MensajeExito"] != null)
+    {
+        <div class="alert alert-success">
+
+            @TempData["MensajeExito"]
+
+        </div>
+    }
+
+
+    <div class="row g-4">
+
+        <!-- =============================================
+             INFORMACIÓN PERSONAL
+             ============================================= -->
+
+        <div class="col-lg-6">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-header bg-white">
+
+                    <h5 class="mb-0">
+                        Información personal
+                    </h5>
+
+                </div>
+
+                <div class="card-body">
+
+                    <dl class="row mb-0">
+
+                        <dt class="col-sm-5">
+                            Código
+                        </dt>
+
+                        <dd class="col-sm-7">
+                            @Model.CodigoCliente
+                        </dd>
+
+
+                        <dt class="col-sm-5">
+                            Nombres
+                        </dt>
+
+                        <dd class="col-sm-7">
+                            @Model.Usuario.Nombres
+                        </dd>
+
+
+                        <dt class="col-sm-5">
+                            Apellidos
+                        </dt>
+
+                        <dd class="col-sm-7">
+                            @Model.Usuario.Apellidos
+                        </dd>
+
+
+                        <dt class="col-sm-5">
+                            Fecha nacimiento
+                        </dt>
+
+                        <dd class="col-sm-7">
+
+                            @if (Model.FechaNacimiento.HasValue)
+                            {
+                                @Model.FechaNacimiento.Value.ToString("dd/MM/yyyy")
+                            }
+                            else
+                            {
+                                <span class="text-muted">
+                                    No registrada
+                                </span>
+                            }
+
+                        </dd>
+
+
+                        <dt class="col-sm-5">
+                            Profesión
+                        </dt>
+
+                        <dd class="col-sm-7">
+                            @(Model.Profesion ?? "No registrada")
+                        </dd>
+
+
+                        <dt class="col-sm-5">
+                            Lugar de trabajo
+                        </dt>
+
+                        <dd class="col-sm-7">
+                            @(Model.LugarTrabajo ?? "No registrado")
+                        </dd>
+
+
+                        <dt class="col-sm-5">
+                            Ingreso mensual
+                        </dt>
+
+                        <dd class="col-sm-7">
+
+                            @if (Model.IngresoMensual.HasValue)
+                            {
+                                <span>
+                                    Q @Model.IngresoMensual.Value.ToString("N2")
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">
+                                    No registrado
+                                </span>
+                            }
+
+                        </dd>
+
+
+                        <dt class="col-sm-5">
+                            Estado
+                        </dt>
+
+                        <dd class="col-sm-7">
+
+                            @if (Model.Estado == "ACTIVO")
+                            {
+                                <span class="badge bg-success">
+                                    ACTIVO
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">
+                                    @Model.Estado
+                                </span>
+                            }
+
+                        </dd>
+
+                    </dl>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =============================================
+             INFORMACIÓN DE USUARIO
+             ============================================= -->
+
+        <div class="col-lg-6">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-header bg-white">
+
+                    <h5 class="mb-0">
+                        Acceso al sistema
+                    </h5>
+
+                </div>
+
+                <div class="card-body">
+
+                    <dl class="row mb-0">
+
+                        <dt class="col-sm-5">
+                            Usuario
+                        </dt>
+
+                        <dd class="col-sm-7">
+                            @Model.Usuario.Username
+                        </dd>
+
+
+                        <dt class="col-sm-5">
+                            Rol
+                        </dt>
+
+                        <dd class="col-sm-7">
+                            @Model.Usuario.Rol
+                        </dd>
+
+
+                        <dt class="col-sm-5">
+                            Estado usuario
+                        </dt>
+
+                        <dd class="col-sm-7">
+                            @Model.Usuario.Estado
+                        </dd>
+
+
+                        <dt class="col-sm-5">
+                            Fecha registro
+                        </dt>
+
+                        <dd class="col-sm-7">
+                            @Model.FechaRegistro.ToString("dd/MM/yyyy HH:mm")
+                        </dd>
+
+                    </dl>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         CRÉDITOS DEL CLIENTE
+         ===================================================== -->
+
+    <div class="card shadow-sm mt-4">
+
+        <div class="card-header bg-white">
+
+            <h5 class="mb-0">
+                Créditos del cliente
+            </h5>
+
+        </div>
+
+        <div class="card-body">
+
+            @if (Model.Creditos != null &&
+                 Model.Creditos.Any())
+            {
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle">
+
+                        <thead>
+
+                            <tr>
+                                <th>Código</th>
+                                <th>Plan</th>
+                                <th>Monto</th>
+                                <th>Plazo</th>
+                                <th>Cuota</th>
+                                <th>Saldo</th>
+                                <th>Estado</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            @foreach (var credito in
+                                Model.Creditos
+                                    .OrderByDescending(c =>
+                                        c.FechaOtorgamiento))
+                            {
+                                <tr>
+
+                                    <td>
+                                        @credito.CodigoCredito
+                                    </td>
+
+                                    <td>
+                                        @credito.PlanCredito.Nombre
+                                    </td>
+
+                                    <td>
+                                        Q @credito.MontoOriginal.ToString("N2")
+                                    </td>
+
+                                    <td>
+                                        @credito.PlazoMeses meses
+                                    </td>
+
+                                    <td>
+                                        Q @credito.CuotaOriginal.ToString("N2")
+                                    </td>
+
+                                    <td>
+                                        Q @credito.SaldoCapital.ToString("N2")
+                                    </td>
+
+                                    <td>
+                                        @credito.Estado
+                                    </td>
+
+                                </tr>
+                            }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info mb-0">
+
+                    Este cliente aún no tiene créditos registrados.
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+
+</div>

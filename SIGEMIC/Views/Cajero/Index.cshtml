@@ -1,50 +1,67 @@
 @{
     ViewData["Title"] = "Dashboard Cajero";
+
+    int totalClientes =
+        ViewBag.TotalClientes ?? 0;
+
+    int creditosActivos =
+        ViewBag.CreditosActivos ?? 0;
+
+    int cuotasPendientes =
+        ViewBag.CuotasPendientes ?? 0;
+
+    decimal pagosHoy =
+        ViewBag.PagosHoy ?? 0m;
 }
 
 <div class="container mt-4">
 
     <div class="mb-4">
 
-        <h2>Panel de Cajero</h2>
+        <h2>Dashboard Cajero</h2>
 
-        <p class="text-muted">
-            Bienvenido, @User.Identity?.Name
+        <p class="text-muted mb-0">
+            Operaciones principales de atención y cobro.
         </p>
 
     </div>
 
-    <div class="row">
+    <div class="row g-3 mb-4">
 
-        <div class="col-md-3 mb-3">
+        <div class="col-md-3">
+
             <div class="card shadow-sm h-100">
+
                 <div class="card-body">
 
-                    <h6 class="text-muted">
+                    <small class="text-muted">
                         Clientes
-                    </h6>
+                    </small>
 
-                    <h2>
-                        @ViewBag.TotalClientes
-                    </h2>
+                    <h3 class="mb-0">
+                        @totalClientes
+                    </h3>
 
                 </div>
+
             </div>
+
         </div>
 
-        <div class="col-md-3 mb-3">
+
+        <div class="col-md-3">
 
             <div class="card shadow-sm h-100">
 
                 <div class="card-body">
 
-                    <h6 class="text-muted">
+                    <small class="text-muted">
                         Créditos activos
-                    </h6>
+                    </small>
 
-                    <h2>
-                        @ViewBag.CreditosActivos
-                    </h2>
+                    <h3 class="mb-0">
+                        @creditosActivos
+                    </h3>
 
                 </div>
 
@@ -52,19 +69,20 @@
 
         </div>
 
-        <div class="col-md-3 mb-3">
+
+        <div class="col-md-3">
 
             <div class="card shadow-sm h-100">
 
                 <div class="card-body">
 
-                    <h6 class="text-muted">
+                    <small class="text-muted">
                         Cuotas pendientes
-                    </h6>
+                    </small>
 
-                    <h2>
-                        @ViewBag.CuotasPendientes
-                    </h2>
+                    <h3 class="mb-0">
+                        @cuotasPendientes
+                    </h3>
 
                 </div>
 
@@ -72,18 +90,19 @@
 
         </div>
 
-        <div class="col-md-3 mb-3">
+
+        <div class="col-md-3">
 
             <div class="card shadow-sm h-100">
 
                 <div class="card-body">
 
-                    <h6 class="text-muted">
-                        Cobrado hoy
-                    </h6>
+                    <small class="text-muted">
+                        Pagos de hoy
+                    </small>
 
-                    <h3>
-                        Q @ViewBag.PagosHoy.ToString("N2")
+                    <h3 class="mb-0">
+                        Q @pagosHoy.ToString("N2")
                     </h3>
 
                 </div>
@@ -94,84 +113,121 @@
 
     </div>
 
-    <hr />
 
-    <h4 class="mb-3">
-        Operaciones
-    </h4>
+    <div class="card shadow-sm">
 
-    <div class="row">
+        <div class="card-header bg-white">
 
-        <div class="col-md-4 mb-3">
-
-            <div class="card h-100">
-
-                <div class="card-body">
-
-                    <h5>Clientes</h5>
-
-                    <p>
-                        Registrar y consultar clientes.
-                    </p>
-
-                    <a asp-controller="Clientes"
-                       asp-action="Index"
-                       class="btn btn-primary">
-
-                        Clientes
-
-                    </a>
-
-                </div>
-
-            </div>
+            <h5 class="mb-0">
+                Operaciones
+            </h5>
 
         </div>
 
-        <div class="col-md-4 mb-3">
+        <div class="card-body">
 
-            <div class="card h-100">
+            <div class="row g-3">
 
-                <div class="card-body">
+                <!-- CLIENTES -->
+                <div class="col-md-4">
 
-                    <h5>Registrar pago</h5>
+                    <div class="border rounded p-3 h-100">
 
-                    <p>
-                        Registrar pagos mensuales.
-                    </p>
+                        <h5>
+                            Clientes
+                        </h5>
 
-                    <a asp-controller="Pagos"
-                        asp-action="Index"
-                        class="btn btn-outline-primary">
+                        <p class="text-muted">
+                            Consultar y registrar clientes.
+                        </p>
+
+                        <a asp-controller="Clientes"
+                           asp-action="Index"
+                           class="btn btn-outline-primary">
+
+                            Ver clientes
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+                <!-- CRÉDITOS -->
+                <div class="col-md-4">
+
+                    <div class="border rounded p-3 h-100">
+
+                        <h5>
+                            Créditos
+                        </h5>
+
+                        <p class="text-muted">
+                            Consultar créditos y tablas de amortización.
+                        </p>
+
+                        <a asp-controller="Creditos"
+                           asp-action="Index"
+                           class="btn btn-outline-primary">
+
+                            Ver créditos
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+                <!-- REGISTRAR PAGO -->
+                <div class="col-md-4">
+
+                    <div class="border rounded p-3 h-100">
+
+                        <h5>
+                            Registrar pago
+                        </h5>
+
+                        <p class="text-muted">
+                            Cobrar cuotas o registrar abonos a capital.
+                        </p>
+
+                        <a asp-controller="Pagos"
+                           asp-action="Index"
+                           class="btn btn-outline-primary">
 
                             Registrar pago
 
                         </a>
 
+                    </div>
+
                 </div>
 
-            </div>
 
-        </div>
+                <!-- HISTORIAL -->
+                <div class="col-md-4">
 
-        <div class="col-md-4 mb-3">
+                    <div class="border rounded p-3 h-100">
 
-            <div class="card h-100">
+                        <h5>
+                            Historial de pagos
+                        </h5>
 
-                <div class="card-body">
+                        <p class="text-muted">
+                            Consultar recibos, pagos y abonos registrados.
+                        </p>
 
-                    <h5>Estado de cuenta</h5>
+                        <a asp-controller="Pagos"
+                           asp-action="Historial"
+                           class="btn btn-outline-primary">
 
-                    <p>
-                        Consultar créditos y cuotas.
-                    </p>
+                            Ver historial
 
-                    <a href="#"
-                       class="btn btn-outline-primary">
+                        </a>
 
-                        Consultar
-
-                    </a>
+                    </div>
 
                 </div>
 

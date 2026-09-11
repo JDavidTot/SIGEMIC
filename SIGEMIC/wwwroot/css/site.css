@@ -29,3 +29,106 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+
+/* =========================================================
+   SIGEMIC - AJUSTES GENERALES
+   ========================================================= */
+
+html {
+    min-height: 100%;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+
+
+.navbar-sigemic {
+    background-color: #0d6efd;
+}
+
+.navbar-brand {
+    letter-spacing: 0.5px;
+}
+
+.navbar .nav-link {
+    border-radius: 6px;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    transition: background-color 0.2s ease;
+}
+
+.navbar .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.navbar-brand {
+    font-weight: 700;
+    letter-spacing: 0.7px;
+}
+
+.navbar .nav-link {
+    color: rgba(255, 255, 255, 0.88) !important;
+}
+
+.navbar .nav-link:hover {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* =========================================================
+   TARJETAS
+   ========================================================= */
+
+.card {
+    border-radius: 10px;
+}
+
+.card.shadow-sm,
+.card.shadow {
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.card.shadow-sm:hover {
+    transform: translateY(-2px);
+}
+
+
+/* =========================================================
+   TABLAS
+   ========================================================= */
+
+.table thead th {
+    white-space: nowrap;
+}
+
+.table tbody td {
+    vertical-align: middle;
+}
+
+
+/* =========================================================
+   BOTONES
+   ========================================================= */
+
+.btn {
+    border-radius: 6px;
+}
+
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+footer {
+    font-size: 0.9rem;
+}

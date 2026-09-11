@@ -1,99 +1,117 @@
 @{
     ViewData["Title"] = "Dashboard Administrador";
+
+    int totalClientes =
+        ViewBag.TotalClientes ?? 0;
+
+    int creditosActivos =
+        ViewBag.CreditosActivos ?? 0;
+
+    int creditosAtrasados =
+        ViewBag.CreditosAtrasados ?? 0;
+
+    decimal totalPrestado =
+        ViewBag.TotalPrestado ?? 0m;
+
+    decimal saldoPendiente =
+        ViewBag.SaldoPendiente ?? 0m;
+
+    decimal totalPagos =
+        ViewBag.TotalPagos ?? 0m;
 }
 
 <div class="container mt-4">
 
+
     <div class="mb-4">
-        <h2>Panel de Administración</h2>
 
-        <p class="text-muted">
-            Bienvenido, @User.Identity?.Name
+        <h2>Dashboard Administrador</h2>
+
+        <p class="text-muted mb-0">
+            Resumen general y administración de SIGEMIC.
         </p>
+
     </div>
 
-    <div class="row">
 
-        <div class="col-md-4 mb-3">
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-4 col-lg-2">
+
             <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <h6 class="text-muted">
-                        Clientes registrados
-                    </h6>
 
-                    <h2>
-                        @ViewBag.TotalClientes
-                    </h2>
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Clientes
+                    </small>
+
+                    <h3 class="mb-0">
+                        @totalClientes
+                    </h3>
+
                 </div>
+
             </div>
+
         </div>
 
 
-        <div class="col-md-4 mb-3">
+        <div class="col-md-4 col-lg-2">
+
             <div class="card shadow-sm h-100">
+
                 <div class="card-body">
-                    <h6 class="text-muted">
+
+                    <small class="text-muted">
                         Créditos activos
-                    </h6>
+                    </small>
 
-                    <h2>
-                        @ViewBag.CreditosActivos
-                    </h2>
+                    <h3 class="mb-0">
+                        @creditosActivos
+                    </h3>
+
                 </div>
+
             </div>
+
         </div>
 
-        <div class="col-md-4 mb-3">
+
+        <div class="col-md-4 col-lg-2">
+
             <div class="card shadow-sm h-100">
+
                 <div class="card-body">
 
-                    <h6 class="text-muted">
+                    <small class="text-muted">
                         Créditos atrasados
-                    </h6>
+                    </small>
 
-                    <h2>
-                        @ViewBag.CreditosAtrasados
-                    </h2>
+                    <h3 class="mb-0">
+                        @creditosAtrasados
+                    </h3>
 
                 </div>
+
             </div>
+
         </div>
 
-    </div>
 
-    <div class="row">
+        <div class="col-md-4 col-lg-2">
 
-        <div class="col-md-4 mb-3">
             <div class="card shadow-sm h-100">
 
                 <div class="card-body">
 
-                    <h6 class="text-muted">
+                    <small class="text-muted">
                         Total prestado
-                    </h6>
+                    </small>
 
-                    <h3>
-                        Q @ViewBag.TotalPrestado.ToString("N2")
-                    </h3>
-
-                </div>
-
-            </div>
-        </div>
-
-        <div class="col-md-4 mb-3">
-
-            <div class="card shadow-sm h-100">
-
-                <div class="card-body">
-
-                    <h6 class="text-muted">
-                        Capital pendiente
-                    </h6>
-
-                    <h3>
-                        Q @ViewBag.SaldoPendiente.ToString("N2")
-                    </h3>
+                    <h5 class="mb-0">
+                        Q @totalPrestado.ToString("N2")
+                    </h5>
 
                 </div>
 
@@ -101,19 +119,41 @@
 
         </div>
 
-        <div class="col-md-4 mb-3">
+
+        <div class="col-md-4 col-lg-2">
 
             <div class="card shadow-sm h-100">
 
                 <div class="card-body">
 
-                    <h6 class="text-muted">
+                    <small class="text-muted">
+                        Saldo pendiente
+                    </small>
+
+                    <h5 class="mb-0">
+                        Q @saldoPendiente.ToString("N2")
+                    </h5>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-4 col-lg-2">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
                         Total recibido
-                    </h6>
+                    </small>
 
-                    <h3>
-                        Q @ViewBag.TotalPagos.ToString("N2")
-                    </h3>
+                    <h5 class="mb-0">
+                        Q @totalPagos.ToString("N2")
+                    </h5>
 
                 </div>
 
@@ -123,108 +163,173 @@
 
     </div>
 
-    <hr />
 
-    <h4 class="mb-3">
-        Administración
-    </h4>
+    <div class="card shadow-sm">
 
-    <div class="row">
+        <div class="card-header bg-white">
 
-        <div class="col-md-3 mb-3">
-
-            <div class="card h-100">
-
-                <div class="card-body">
-
-                    <h5>Clientes</h5>
-
-                    <p>
-                        Registrar y administrar clientes.
-                    </p>
-
-                    <a asp-controller="Clientes"
-                       asp-action="Index"
-                       class="btn btn-primary">
-
-                        Ir a clientes
-
-                    </a>
-
-                </div>
-
-            </div>
+            <h5 class="mb-0">
+                Módulos administrativos
+            </h5>
 
         </div>
 
-        <div class="col-md-3 mb-3">
+        <div class="card-body">
 
-            <div class="card h-100">
+            <div class="row g-3">
 
-                <div class="card-body">
+                <!-- CLIENTES -->
+                <div class="col-md-6 col-lg-4">
 
-                    <h5>Créditos</h5>
+                    <div class="border rounded p-3 h-100">
 
-                    <p>
-                        Gestionar créditos otorgados.
-                    </p>
+                        <h5>
+                            Clientes
+                        </h5>
 
-                    <a asp-controller="Creditos"
-                        asp-action="Index"
-                        class="btn btn-outline-primary">
+                        <p class="text-muted">
+                            Crear, consultar, editar, activar o inactivar clientes.
+                        </p>
 
-                            Créditos
+                        <a asp-controller="Clientes"
+                           asp-action="Index"
+                           class="btn btn-outline-primary">
 
-                    </a>
+                            Administrar clientes
 
-                </div>
-
-            </div>
-
-        </div>
-
-        <div class="col-md-3 mb-3">
-
-            <div class="card h-100">
-
-                <div class="card-body">
-
-                    <h5>Pagos</h5>
-
-                    <p>
-                        Consultar pagos y abonos.
-                    </p>
-
-                    <a href="#"
-                       class="btn btn-outline-primary">
-
-                        Pagos
-
-                    </a>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <div class="col-md-3 mb-3">
-
-            <div class="card h-100">
-
-                <div class="card-body">
-
-                    <h5>Planes</h5>
-
-                    <p>
-                        Configurar planes de crédito.
-                    </p>
-
-                    <a asp-controller="PlanesCredito"
-                        asp-action="Index"
-                        class="btn btn-outline-primary">
-                            Planes
                         </a>
+
+                    </div>
+
+                </div>
+
+
+                <!-- CRÉDITOS -->
+                <div class="col-md-6 col-lg-4">
+
+                    <div class="border rounded p-3 h-100">
+
+                        <h5>
+                            Créditos
+                        </h5>
+
+                        <p class="text-muted">
+                            Otorgar créditos y consultar tablas de amortización.
+                        </p>
+
+                        <a asp-controller="Creditos"
+                           asp-action="Index"
+                           class="btn btn-outline-primary">
+
+                            Administrar créditos
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+                <!-- PLANES -->
+                <div class="col-md-6 col-lg-4">
+
+                    <div class="border rounded p-3 h-100">
+
+                        <h5>
+                            Planes de crédito
+                        </h5>
+
+                        <p class="text-muted">
+                            Administrar tasas, tipos de tasa y planes disponibles.
+                        </p>
+
+                        <a asp-controller="PlanesCredito"
+                           asp-action="Index"
+                           class="btn btn-outline-primary">
+
+                            Administrar planes
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+                <!-- REGISTRAR PAGOS -->
+                <div class="col-md-6 col-lg-4">
+
+                    <div class="border rounded p-3 h-100">
+
+                        <h5>
+                            Registrar pagos
+                        </h5>
+
+                        <p class="text-muted">
+                            Registrar cuotas, pagos parciales y abonos a capital.
+                        </p>
+
+                        <a asp-controller="Pagos"
+                           asp-action="Index"
+                           class="btn btn-outline-primary">
+
+                            Registrar pago
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+                <!-- HISTORIAL -->
+                <div class="col-md-6 col-lg-4">
+
+                    <div class="border rounded p-3 h-100">
+
+                        <h5>
+                            Historial de pagos
+                        </h5>
+
+                        <p class="text-muted">
+                            Consultar recibos, pagos y abonos realizados.
+                        </p>
+
+                        <a asp-controller="Pagos"
+                           asp-action="Historial"
+                           class="btn btn-outline-primary">
+
+                            Ver historial
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+                <!-- AUDITORÍA -->
+                <div class="col-md-6 col-lg-4">
+
+                    <div class="border rounded p-3 h-100">
+
+                        <h5>
+                            Auditoría
+                        </h5>
+
+                        <p class="text-muted">
+                            Registro de acciones y eventos importantes del sistema.
+                        </p>
+
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                disabled>
+
+                            Próximamente
+
+                        </button>
+
+                    </div>
 
                 </div>
 

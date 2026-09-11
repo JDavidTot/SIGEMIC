@@ -1,0 +1,403 @@
+@model SIGEMIC.Models.Credito
+
+@{
+    ViewData["Title"] = "Mi crédito";
+
+    var cuotasPagadas =
+        Model.Cuotas.Count(c =>
+            c.Estado == "PAGADA");
+
+    var cuotasPendientes =
+        Model.Cuotas.Count(c =>
+            c.Estado != "PAGADA");
+
+    var totalCapitalPagado =
+        Model.Cuotas.Sum(c =>
+            c.CapitalPagado);
+
+    var totalInteresPagado =
+        Model.Cuotas.Sum(c =>
+            c.InteresPagado);
+}
+
+<div class="container mt-4">
+
+    <!-- =====================================================
+         ENCABEZADO
+         ===================================================== -->
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+
+            <h2>Mi crédito</h2>
+
+            <p class="text-muted mb-0">
+
+                Crédito:
+                <strong>
+                    @Model.CodigoCredito
+                </strong>
+
+            </p>
+
+        </div>
+
+        <a asp-controller="Cliente"
+           asp-action="Index"
+           class="btn btn-secondary">
+
+            Volver a mi cuenta
+
+        </a>
+
+    </div>
+
+
+    <!-- =====================================================
+         RESUMEN
+         ===================================================== -->
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Monto original
+                    </small>
+
+                    <h4 class="mb-0">
+                        Q @Model.MontoOriginal.ToString("N2")
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Saldo pendiente
+                    </small>
+
+                    <h4 class="mb-0">
+                        Q @Model.SaldoCapital.ToString("N2")
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Cuota mensual
+                    </small>
+
+                    <h4 class="mb-0">
+                        Q @Model.CuotaOriginal.ToString("N2")
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Estado
+                    </small>
+
+                    <div class="mt-1">
+
+                        @if (Model.Estado == "ACTIVO")
+                        {
+                            <span class="badge bg-success fs-6">
+                                ACTIVO
+                            </span>
+                        }
+                        else if (Model.Estado == "ATRASADO")
+                        {
+                            <span class="badge bg-danger fs-6">
+                                ATRASADO
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary fs-6">
+                                @Model.Estado
+                            </span>
+                        }
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         INFORMACIÓN DEL CRÉDITO
+         ===================================================== -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header bg-white">
+
+            <h5 class="mb-0">
+                Información del crédito
+            </h5>
+
+        </div>
+
+        <div class="card-body">
+
+            <div class="row">
+
+                <div class="col-md-6">
+
+                    <dl class="row mb-0">
+
+                        <dt class="col-sm-6">
+                            Plan
+                        </dt>
+
+                        <dd class="col-sm-6">
+                            @Model.PlanCredito.Nombre
+                        </dd>
+
+
+                        <dt class="col-sm-6">
+                            Tipo de tasa
+                        </dt>
+
+                        <dd class="col-sm-6">
+                            @Model.TipoTasaAplicada
+                        </dd>
+
+
+                        <dt class="col-sm-6">
+                            Tasa aplicada
+                        </dt>
+
+                        <dd class="col-sm-6">
+                            @Model.PorcentajeInteresAplicado.ToString("N2") %
+                        </dd>
+
+
+                        <dt class="col-sm-6">
+                            Plazo original
+                        </dt>
+
+                        <dd class="col-sm-6">
+                            @Model.PlazoMeses meses
+                        </dd>
+
+                    </dl>
+
+                </div>
+
+
+                <div class="col-md-6">
+
+                    <dl class="row mb-0">
+
+                        <dt class="col-sm-6">
+                            Fecha de otorgamiento
+                        </dt>
+
+                        <dd class="col-sm-6">
+                            @Model.FechaOtorgamiento.ToString("dd/MM/yyyy")
+                        </dd>
+
+
+                        <dt class="col-sm-6">
+                            Fecha de inicio
+                        </dt>
+
+                        <dd class="col-sm-6">
+                            @Model.FechaInicio.ToString("dd/MM/yyyy")
+                        </dd>
+
+
+                        <dt class="col-sm-6">
+                            Finalización estimada
+                        </dt>
+
+                        <dd class="col-sm-6">
+                            @Model.FechaFinalizacionEstimada.ToString("dd/MM/yyyy")
+                        </dd>
+
+                    </dl>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         AVANCE DEL CRÉDITO
+         ===================================================== -->
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Cuotas pagadas
+                    </small>
+
+                    <h4 class="mb-0">
+                        @cuotasPagadas
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Cuotas pendientes
+                    </small>
+
+                    <h4 class="mb-0">
+                        @cuotasPendientes
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Capital pagado
+                    </small>
+
+                    <h4 class="mb-0">
+                        Q @totalCapitalPagado.ToString("N2")
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Interés pagado
+                    </small>
+
+                    <h4 class="mb-0">
+                        Q @totalInteresPagado.ToString("N2")
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         ACCESOS
+         ===================================================== -->
+
+    <div class="card shadow-sm">
+
+        <div class="card-header bg-white">
+
+            <h5 class="mb-0">
+                Consultas
+            </h5>
+
+        </div>
+
+        <div class="card-body">
+
+            <div class="d-flex gap-2 flex-wrap">
+
+                <a asp-controller="Cliente"
+                   asp-action="Cuotas"
+                   class="btn btn-outline-primary">
+
+                    Ver mis cuotas
+
+                </a>
+
+                <a asp-controller="Cliente"
+                   asp-action="EstadoCuenta"
+                   class="btn btn-outline-primary">
+
+                    Ver estado de cuenta
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

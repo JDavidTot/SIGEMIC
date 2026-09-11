@@ -17,19 +17,41 @@ namespace SIGEMIC.Controllers
             _context = context;
         }
 
-        // LISTADO DE CRÉDITOS
 
 
         public async Task<IActionResult> Index()
         {
-            var creditos = await _context.Creditos.Include(c => c.Cliente).ThenInclude(c => c.Usuario).Include(c => c.PlanCredito)
+            var creditos = await _context.Creditos
+                .Include(c => c.Cliente)
+                    .ThenInclude(c => c.Usuario)
+                .Include(c => c.PlanCredito)
                 .OrderByDescending(c => c.FechaOtorgamiento)
+                .ThenByDescending(c => c.IdCredito)
                 .ToListAsync();
 
             return View(creditos);
         }
 
-        // NUEVO CRÉDITO GET
+  
+
+        [HttpGet]
+        public async Task<IActionResult> Details(ulong id)
+        {
+            var credito = await _context.Creditos
+                .Include(c => c.Cliente)
+                    .ThenInclude(c => c.Usuario)
+                .Include(c => c.PlanCredito)
+                .Include(c => c.Cuotas)
+                .FirstOrDefaultAsync(c =>
+                    c.IdCredito == id);
+
+            if (credito == null)
+            {
+                return NotFound();
+            }
+
+            return View(credito);
+        }
 
         [HttpGet]
         public async Task<IActionResult> Create()
@@ -41,14 +63,14 @@ namespace SIGEMIC.Controllers
             return View(model);
         }
 
-        // NUEVO CRÉDITO POST
+  
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CrearCreditoViewModel model)
+        public async Task<IActionResult> Create(
+            CrearCreditoViewModel model)
         {
 
-            // VALIDACIONES DEL FORMULARIO
 
             if (!ModelState.IsValid)
             {
@@ -57,31 +79,42 @@ namespace SIGEMIC.Controllers
                 return View(model);
             }
 
-            // VALIDAR CLIENTE
 
-            var cliente = await _context.Clientes.FirstOrDefaultAsync(c =>c.IdCliente == model.IdCliente &&
+            var cliente = await _context.Clientes
+                .FirstOrDefaultAsync(c =>
+                    c.IdCliente == model.IdCliente &&
                     c.Estado == "ACTIVO");
 
             if (cliente == null)
             {
-                ModelState.AddModelError(nameof(model.IdCliente),"El cliente seleccionado no existe o está inactivo.");
+                ModelState.AddModelError(
+                    nameof(model.IdCliente),
+                    "El cliente seleccionado no existe o está inactivo."
+                );
+
                 await CargarCombos(model);
+
                 return View(model);
             }
 
-            // VALIDAR PLAN
 
-            var plan = await _context.PlanesCredito.FirstOrDefaultAsync(p =>p.IdPlan == model.IdPlan &&
-                p.Estado == "ACTIVO");
+            var plan = await _context.PlanesCredito
+                .FirstOrDefaultAsync(p =>
+                    p.IdPlan == model.IdPlan &&
+                    p.Estado == "ACTIVO");
 
             if (plan == null)
             {
-                ModelState.AddModelError(nameof(model.IdPlan),"El plan seleccionado no existe o está inactivo.");
+                ModelState.AddModelError(
+                    nameof(model.IdPlan),
+                    "El plan seleccionado no existe o está inactivo."
+                );
+
                 await CargarCombos(model);
+
                 return View(model);
             }
 
-            // VALIDAR PLAZO
 
             uint[] plazosPermitidos =
             {
@@ -90,103 +123,135 @@ namespace SIGEMIC.Controllers
 
             if (!plazosPermitidos.Contains(model.PlazoMeses))
             {
-                ModelState.AddModelError(nameof(model.PlazoMeses),"El plazo seleccionado no es válido.");
+                ModelState.AddModelError(
+                    nameof(model.PlazoMeses),
+                    "El plazo seleccionado no es válido."
+                );
+
                 await CargarCombos(model);
+
                 return View(model);
             }
 
-            // CALCULAR TASA MENSUAL
 
             decimal tasaMensual;
 
             if (plan.TipoTasa == "ANUAL")
             {
-                tasaMensual = plan.PorcentajeInteres / 12m / 100m;
+                tasaMensual =
+                    plan.PorcentajeInteres / 12m / 100m;
             }
             else
             {
-                tasaMensual = plan.PorcentajeInteres / 100m;
+                tasaMensual =
+                    plan.PorcentajeInteres / 100m;
             }
 
 
-            // CALCULAR CUOTA FIJA SISTEMA FRANCES
+            double monto =
+                Convert.ToDouble(model.MontoOriginal);
 
-            double monto = Convert.ToDouble(model.MontoOriginal);
+            double tasa =
+                Convert.ToDouble(tasaMensual);
 
-            double tasa = Convert.ToDouble(tasaMensual);
-
-            int meses = Convert.ToInt32(model.PlazoMeses);
+            int meses =
+                Convert.ToInt32(model.PlazoMeses);
 
             double cuotaCalculada;
 
             if (tasa == 0)
             {
-                cuotaCalculada = monto / meses;
+                cuotaCalculada =
+                    monto / meses;
             }
             else
             {
-                double factor = Math.Pow(1 + tasa, meses);
+                double factor =
+                    Math.Pow(1 + tasa, meses);
 
-                cuotaCalculada = monto *
+                cuotaCalculada =
+                    monto *
                     (
-                        tasa * factor / (factor - 1)
+                        tasa * factor /
+                        (factor - 1)
                     );
             }
 
-            decimal cuota = Math.Round( Convert.ToDecimal(cuotaCalculada), 2);
+            decimal cuota =
+                Math.Round(
+                    Convert.ToDecimal(cuotaCalculada),
+                    2
+                );
 
-            // TRANSACCIÓN
 
-
-            await using var transaction = await _context.Database.BeginTransactionAsync();
+            await using var transaction =
+                await _context.Database
+                    .BeginTransactionAsync();
 
             try
             {
 
-                // CREAR CRÉDITO
 
                 var credito = new Credito
                 {
-                    CodigoCredito = $"TMP-{Guid.NewGuid().ToString("N")[..20]}",
+                    CodigoCredito =
+                        $"TMP-{Guid.NewGuid().ToString("N")[..20]}",
 
-                    IdCliente = model.IdCliente,
+                    IdCliente =
+                        model.IdCliente,
 
-                    IdPlan = model.IdPlan,
+                    IdPlan =
+                        model.IdPlan,
 
-                    MontoOriginal = model.MontoOriginal,
+                    MontoOriginal =
+                        model.MontoOriginal,
 
-                    TipoTasaAplicada = plan.TipoTasa,
+                    TipoTasaAplicada =
+                        plan.TipoTasa,
 
-                    PorcentajeInteresAplicado = plan.PorcentajeInteres,
+                    PorcentajeInteresAplicado =
+                        plan.PorcentajeInteres,
 
-                    PlazoMeses = model.PlazoMeses,
+                    PlazoMeses =
+                        model.PlazoMeses,
 
-                    CuotaOriginal = cuota,
+                    CuotaOriginal =
+                        cuota,
 
-                    SaldoCapital = model.MontoOriginal,
+                    SaldoCapital =
+                        model.MontoOriginal,
 
-                    Estado = "ACTIVO",
+                    Estado =
+                        "ACTIVO",
 
-                    FechaOtorgamiento = DateTime.Today,
+                    FechaOtorgamiento =
+                        DateTime.Today,
 
-                    FechaInicio = DateTime.Today,
+                    FechaInicio =
+                        DateTime.Today,
 
-                    FechaFinalizacionEstimada = DateTime.Today.AddMonths( (int)model.PlazoMeses),
+                    FechaFinalizacionEstimada =
+                        DateTime.Today.AddMonths(
+                            (int)model.PlazoMeses
+                        ),
 
-                    FechaCancelacion = null
+                    FechaCancelacion =
+                        null
                 };
 
                 _context.Creditos.Add(credito);
 
                 await _context.SaveChangesAsync();
 
-                credito.CodigoCredito = $"CR-{credito.IdCredito:D6}";
+                // Ahora ya tenemos el ID.
+                credito.CodigoCredito =
+                    $"CR-{credito.IdCredito:D6}";
 
                 await _context.SaveChangesAsync();
 
-                // GENERAR CUOTAS
 
-                decimal saldoRestante =  credito.MontoOriginal;
+                decimal saldoRestante =
+                    credito.MontoOriginal;
 
                 for (
                     int numero = 1;
@@ -194,48 +259,88 @@ namespace SIGEMIC.Controllers
                     numero++
                 )
                 {
+                    // Interés del período
+                    decimal interesMes =
+                        Math.Round(
+                            saldoRestante *
+                            tasaMensual,
+                            2
+                        );
 
-                    // INTERÉS DEL MES
+                    // Capital del período
+                    decimal capitalMes =
+                        Math.Round(
+                            credito.CuotaOriginal -
+                            interesMes,
+                            2
+                        );
 
-                    decimal interesMes = Math.Round(saldoRestante * tasaMensual, 2);
-
-                    // CAPITAL DEL MES
-
-                    decimal capitalMes = Math.Round(credito.CuotaOriginal - interesMes, 2);
-
-                    // AJUSTE DE ÚLTIMA CUOTA
-
+                    // Ajuste de la última cuota
                     if (numero == meses)
                     {
-                        capitalMes = saldoRestante;
+                        capitalMes =
+                            saldoRestante;
                     }
 
-                    // CUOTA DEL MES
+                    decimal cuotaMes =
+                        Math.Round(
+                            capitalMes +
+                            interesMes,
+                            2
+                        );
 
-                    decimal cuotaMes = Math.Round(capitalMes + interesMes, 2);
+                    var nuevaCuota =
+                        new Cuota
+                        {
+                            IdCredito =
+                                credito.IdCredito,
 
-                    // CREAR REGISTRO DE CUOTA
+                            NumeroCuota =
+                                (uint)numero,
 
-                    var nuevaCuota = new Cuota
-                    {
-                        IdCredito = credito.IdCredito,
+                            FechaVencimiento =
+                                credito.FechaInicio
+                                    .AddMonths(numero),
 
-                        NumeroCuota = (uint)numero, FechaVencimiento = credito.FechaInicio.AddMonths(numero),
-                        CapitalProgramado = capitalMes, InteresProgramado = interesMes, CuotaProgramada = cuotaMes,
-                        CapitalPagado = 0, InteresPagado = 0, MoraPagada = 0, SaldoCuota = cuotaMes, Estado = "PENDIENTE"
-                    };
+                            CapitalProgramado =
+                                capitalMes,
 
-                    _context.Cuotas.Add(nuevaCuota);
+                            InteresProgramado =
+                                interesMes,
 
-                    // ACTUALIZAR SALDO PARA EL SIGUIENTE MES
+                            CuotaProgramada =
+                                cuotaMes,
 
-                    saldoRestante =Math.Round(saldoRestante - capitalMes, 2);
+                            CapitalPagado =
+                                0m,
+
+                            InteresPagado =
+                                0m,
+
+                            MoraPagada =
+                                0m,
+
+                            SaldoCuota =
+                                cuotaMes,
+
+                            Estado =
+                                "PENDIENTE"
+                        };
+
+                    _context.Cuotas.Add(
+                        nuevaCuota
+                    );
+
+                    saldoRestante =
+                        Math.Round(
+                            saldoRestante -
+                            capitalMes,
+                            2
+                        );
                 }
 
-                // Guardar todas las cuotas.
                 await _context.SaveChangesAsync();
 
-                // Confirmar toda la operación.
                 await transaction.CommitAsync();
 
                 TempData["MensajeExito"] =
@@ -243,41 +348,78 @@ namespace SIGEMIC.Controllers
                     $"otorgado correctamente. " +
                     $"Cuota mensual: Q {credito.CuotaOriginal:N2}";
 
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(
+                    nameof(Index)
+                );
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
 
-                Console.WriteLine(ex.ToString());
+                Console.WriteLine(
+                    ex.ToString()
+                );
 
-                ModelState.AddModelError(string.Empty,$"No fue posible registrar el crédito: {ex.Message}");
+                ModelState.AddModelError(
+                    string.Empty,
+                    $"No fue posible registrar el crédito: {ex.Message}"
+                );
+
                 await CargarCombos(model);
+
                 return View(model);
             }
         }
 
-        // CARGAR CLIENTES Y PLANES
 
-        private async Task CargarCombos(CrearCreditoViewModel model)
+        private async Task CargarCombos(
+            CrearCreditoViewModel model)
         {
+          
 
-            // CLIENTES ACTIVOS
-
-            model.Clientes = await _context.Clientes.Include(c => c.Usuario).Where(c =>c.Estado == "ACTIVO").OrderBy(c =>c.Usuario.Nombres)
-                .Select(c =>new SelectListItem
+            model.Clientes = await _context.Clientes
+                .Include(c => c.Usuario)
+                .Where(c =>
+                    c.Estado == "ACTIVO")
+                .OrderBy(c =>
+                    c.Usuario.Nombres)
+                .ThenBy(c =>
+                    c.Usuario.Apellidos)
+                .Select(c =>
+                    new SelectListItem
                     {
-                        Value = c.IdCliente.ToString(), Text = c.CodigoCliente + " - " + c.Usuario.Nombres + " " + c.Usuario.Apellidos
+                        Value =
+                            c.IdCliente.ToString(),
+
+                        Text =
+                            c.CodigoCliente +
+                            " - " +
+                            c.Usuario.Nombres +
+                            " " +
+                            c.Usuario.Apellidos
                     })
                 .ToListAsync();
 
-            // PLANES ACTIVOS
 
-            model.Planes = await _context.PlanesCredito.Where(p =>p.Estado == "ACTIVO").OrderBy(p =>p.Nombre).Select(p =>
+            model.Planes = await _context.PlanesCredito
+                .Where(p =>
+                    p.Estado == "ACTIVO")
+                .OrderBy(p =>
+                    p.Nombre)
+                .Select(p =>
                     new SelectListItem
                     {
-                        Value = p.IdPlan.ToString(),Text = p.Nombre + " - " + p.PorcentajeInteres + "% " + p.TipoTasa
-                    }).ToListAsync();
+                        Value =
+                            p.IdPlan.ToString(),
+
+                        Text =
+                            p.Nombre +
+                            " - " +
+                            p.PorcentajeInteres +
+                            "% " +
+                            p.TipoTasa
+                    })
+                .ToListAsync();
         }
     }
 }

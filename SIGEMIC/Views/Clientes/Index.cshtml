@@ -3,116 +3,258 @@
 @{
     ViewData["Title"] = "Clientes";
 }
-@if (TempData["MensajeExito"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show"
-         role="alert">
 
-        @TempData["MensajeExito"]
-
-        <button type="button"
-                class="btn-close"
-                data-bs-dismiss="alert">
-        </button>
-
-    </div>
-}
 <div class="container mt-4">
+
 
     <div class="d-flex justify-content-between align-items-center mb-4">
 
         <div>
             <h2>Clientes</h2>
-            <p class="text-muted">
-                Administración de clientes registrados
+
+            <p class="text-muted mb-0">
+                Administración de clientes registrados en SIGEMIC.
             </p>
         </div>
 
-        <a asp-controller="Clientes"
-           asp-action="Create"
+        <a asp-action="Create"
            class="btn btn-primary">
+
             Nuevo cliente
+
         </a>
 
     </div>
+
+
+    @if (TempData["MensajeExito"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show"
+             role="alert">
+
+            @TempData["MensajeExito"]
+
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert">
+            </button>
+
+        </div>
+    }
+
 
     <div class="card shadow-sm">
 
         <div class="card-body">
 
-            <div class="table-responsive">
+            @if (Model != null && Model.Any())
+            {
+                <div class="table-responsive">
 
-                <table class="table table-hover align-middle">
+                    <table class="table table-hover align-middle">
 
-                    <thead>
-                        <tr>
-                            <th>Código</th>
-                            <th>Nombre</th>
-                            <th>Usuario</th>
-                            <th>Profesión</th>
-                            <th>Ingreso mensual</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
+                        <thead>
 
-                    <tbody>
-
-                        @foreach (var cliente in Model)
-                        {
                             <tr>
-
-                                <td>
-                                    @cliente.CodigoCliente
-                                </td>
-
-                                <td>
-                                    @cliente.Usuario.Nombres
-                                    @cliente.Usuario.Apellidos
-                                </td>
-
-                                <td>
-                                    @cliente.Usuario.Username
-                                </td>
-
-                                <td>
-                                    @(cliente.Profesion ?? "-")
-                                </td>
-
-                                <td>
-                                    @(cliente.IngresoMensual.HasValue
-                                        ? $"Q {cliente.IngresoMensual.Value:N2}"
-                                        : "-")
-                                </td>
-
-                                <td>
-                                    @cliente.Estado
-                                </td>
-
-                                <td>
-                                    <a asp-action="Details"
-                                       asp-route-id="@cliente.IdCliente"
-                                       class="btn btn-sm btn-outline-primary">
-                                        Ver
-                                    </a>
-
-                                    <a asp-action="Edit"
-                                       asp-route-id="@cliente.IdCliente"
-                                       class="btn btn-sm btn-outline-secondary">
-                                        Editar
-                                    </a>
-                                </td>
-
+                                <th>Código</th>
+                                <th>Cliente</th>
+                                <th>Usuario</th>
+                                <th>Profesión</th>
+                                <th>Ingreso mensual</th>
+                                <th>Estado</th>
+                                <th class="text-end">Acciones</th>
                             </tr>
-                        }
 
-                    </tbody>
+                        </thead>
 
-                </table>
+                        <tbody>
 
-            </div>
+                            @foreach (var cliente in Model)
+                            {
+                                <tr>
+
+                                    <!-- Código -->
+                                    <td>
+                                        <strong>
+                                            @cliente.CodigoCliente
+                                        </strong>
+                                    </td>
+
+
+                                    <!-- Nombre -->
+                                    <td>
+                                        @cliente.Usuario.Nombres
+                                        @cliente.Usuario.Apellidos
+                                    </td>
+
+
+                                    <!-- Usuario -->
+                                    <td>
+                                        @cliente.Usuario.Username
+                                    </td>
+
+
+                                    <!-- Profesión -->
+                                    <td>
+
+                                        @if (!string.IsNullOrWhiteSpace(
+                                            cliente.Profesion))
+                                        {
+                                            @cliente.Profesion
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">
+                                                No registrada
+                                            </span>
+                                        }
+
+                                    </td>
+
+
+                                    <!-- Ingreso -->
+                                    <td>
+
+                                        @if (cliente.IngresoMensual.HasValue)
+                                        {
+                                            <span>
+                                                Q @cliente.IngresoMensual.Value.ToString("N2")
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">
+                                                No registrado
+                                            </span>
+                                        }
+
+                                    </td>
+
+
+                                    <!-- Estado -->
+                                    <td>
+
+                                        @if (cliente.Estado == "ACTIVO")
+                                        {
+                                            <span class="badge bg-success">
+                                                ACTIVO
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">
+                                                @cliente.Estado
+                                            </span>
+                                        }
+
+                                    </td>
+
+
+                                    <!-- Acciones -->
+                                    <td class="text-end">
+
+                                        <div class="d-flex justify-content-end gap-1 flex-wrap">
+
+                                            <!-- VER -->
+                                            <a asp-action="Details"
+                                               asp-route-id="@cliente.IdCliente"
+                                               class="btn btn-outline-primary btn-sm">
+
+                                                Ver
+
+                                            </a>
+
+
+                                            <!-- EDITAR -->
+                                            <a asp-action="Edit"
+                                               asp-route-id="@cliente.IdCliente"
+                                               class="btn btn-outline-secondary btn-sm">
+
+                                                Editar
+
+                                            </a>
+
+
+                                            <!-- ACTIVAR / INACTIVAR -->
+                                            <form asp-action="CambiarEstado"
+                                                  asp-route-id="@cliente.IdCliente"
+                                                  method="post"
+                                                  class="d-inline">
+
+                                                @Html.AntiForgeryToken()
+
+                                                @if (cliente.Estado == "ACTIVO")
+                                                {
+                                                    <button type="submit"
+                                                            class="btn btn-outline-danger btn-sm"
+                                                            onclick="return confirm('¿Desea inactivar este cliente?');">
+
+                                                        Inactivar
+
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button type="submit"
+                                                            class="btn btn-outline-success btn-sm"
+                                                            onclick="return confirm('¿Desea activar este cliente?');">
+
+                                                        Activar
+
+                                                    </button>
+                                                }
+
+                                            </form>
+
+                                        </div>
+
+                                    </td>
+
+                                </tr>
+                            }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info mb-0">
+
+                    No existen clientes registrados.
+
+                </div>
+            }
 
         </div>
+
+    </div>
+
+
+    <div class="mt-3">
+
+        @if (User.IsInRole("ADMINISTRADOR"))
+        {
+            <a asp-controller="Admin"
+               asp-action="Index"
+               class="btn btn-secondary">
+
+                Volver al dashboard
+
+            </a>
+        }
+        else if (User.IsInRole("CAJERO"))
+        {
+            <a asp-controller="Cajero"
+               asp-action="Index"
+               class="btn btn-secondary">
+
+                Volver al dashboard
+
+            </a>
+        }
 
     </div>
 

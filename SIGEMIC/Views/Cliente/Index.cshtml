@@ -1,51 +1,110 @@
 @{
     ViewData["Title"] = "Mi cuenta";
 
-    bool tieneCredito = ViewBag.TieneCredito == true;
+    bool tieneCredito =
+        ViewBag.TieneCredito ?? false;
+
+    string codigoCliente =
+        ViewBag.CodigoCliente ?? "";
+
+    string? codigoCredito =
+        ViewBag.CodigoCredito;
+
+    decimal montoOriginal =
+        ViewBag.MontoOriginal ?? 0m;
+
+    decimal saldoCapital =
+        ViewBag.SaldoCapital ?? 0m;
+
+    decimal cuotaOriginal =
+        ViewBag.CuotaOriginal ?? 0m;
+
+    string estadoCredito =
+        ViewBag.EstadoCredito ?? "SIN CRÉDITO";
+
+    int cuotasPendientes =
+        ViewBag.CuotasPendientes ?? 0;
+
+    decimal totalPagado =
+        ViewBag.TotalPagado ?? 0m;
 }
 
 <div class="container mt-4">
 
+    <!-- =====================================================
+         ENCABEZADO
+         ===================================================== -->
+
     <div class="mb-4">
 
-        <h2>Mi cuenta</h2>
+        <h2>
+            Mi cuenta
+        </h2>
 
-        <p class="text-muted">
+        <p class="text-muted mb-2">
             Bienvenido, @User.Identity?.Name
         </p>
 
-        <p>
+        <p class="mb-0">
             Código de cliente:
             <strong>
-                @ViewBag.CodigoCliente
+                @codigoCliente
             </strong>
         </p>
 
     </div>
 
-    @if (!tieneCredito)
+
+    <!-- =====================================================
+         MENSAJES
+         ===================================================== -->
+
+    @if (TempData["MensajeInfo"] != null)
     {
-        <div class="alert alert-info mb-4">
-            Actualmente no tienes un crédito activo.
+        <div class="alert alert-info alert-dismissible fade show"
+             role="alert">
+
+            @TempData["MensajeInfo"]
+
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert">
+            </button>
+
         </div>
     }
 
-    <div class="row">
 
-        <div class="col-md-3 mb-3">
+    <!-- =====================================================
+         RESUMEN DEL CRÉDITO
+         ===================================================== -->
+
+    <div class="row g-3 mb-3">
+
+        <!-- CRÉDITO -->
+        <div class="col-md-3">
 
             <div class="card shadow-sm h-100">
 
                 <div class="card-body">
 
-                    <h6 class="text-muted">
+                    <small class="text-muted">
                         Crédito
-                    </h6>
+                    </small>
 
-                    <h5>
-                        @(tieneCredito
-                            ? ViewBag.CodigoCredito
-                            : "Sin crédito")
+                    <h5 class="mb-0">
+
+                        @if (tieneCredito)
+                        {
+                            @codigoCredito
+                        }
+                        else
+                        {
+                            <span>
+                                Sin crédito
+                            </span>
+                        }
+
                     </h5>
 
                 </div>
@@ -54,20 +113,20 @@
 
         </div>
 
-        <div class="col-md-3 mb-3">
+
+        <!-- MONTO ORIGINAL -->
+        <div class="col-md-3">
 
             <div class="card shadow-sm h-100">
 
                 <div class="card-body">
 
-                    <h6 class="text-muted">
+                    <small class="text-muted">
                         Monto original
-                    </h6>
+                    </small>
 
-                    <h4>
-                        Q @(tieneCredito
-                            ? ViewBag.MontoOriginal.ToString("N2")
-                            : "0.00")
+                    <h4 class="mb-0">
+                        Q @montoOriginal.ToString("N2")
                     </h4>
 
                 </div>
@@ -76,20 +135,20 @@
 
         </div>
 
-        <div class="col-md-3 mb-3">
+
+        <!-- SALDO -->
+        <div class="col-md-3">
 
             <div class="card shadow-sm h-100">
 
                 <div class="card-body">
 
-                    <h6 class="text-muted">
+                    <small class="text-muted">
                         Saldo pendiente
-                    </h6>
+                    </small>
 
-                    <h4>
-                        Q @(tieneCredito
-                            ? ViewBag.SaldoCapital.ToString("N2")
-                            : "0.00")
+                    <h4 class="mb-0">
+                        Q @saldoCapital.ToString("N2")
                     </h4>
 
                 </div>
@@ -98,20 +157,20 @@
 
         </div>
 
-        <div class="col-md-3 mb-3">
+
+        <!-- CUOTA -->
+        <div class="col-md-3">
 
             <div class="card shadow-sm h-100">
 
                 <div class="card-body">
 
-                    <h6 class="text-muted">
+                    <small class="text-muted">
                         Cuota mensual
-                    </h6>
+                    </small>
 
-                    <h4>
-                        Q @(tieneCredito
-                            ? ViewBag.CuotaOriginal.ToString("N2")
-                            : "0.00")
+                    <h4 class="mb-0">
+                        Q @cuotaOriginal.ToString("N2")
                     </h4>
 
                 </div>
@@ -122,23 +181,52 @@
 
     </div>
 
-    <div class="row">
 
-        <div class="col-md-4 mb-3">
+    <!-- =====================================================
+         ESTADO Y PAGOS
+         ===================================================== -->
+
+    <div class="row g-3 mb-4">
+
+        <!-- ESTADO -->
+        <div class="col-md-4">
 
             <div class="card shadow-sm h-100">
 
                 <div class="card-body">
 
-                    <h6 class="text-muted">
+                    <small class="text-muted">
                         Estado del crédito
-                    </h6>
+                    </small>
 
-                    <h4>
-                        @(tieneCredito
-                            ? ViewBag.EstadoCredito
-                            : "SIN CRÉDITO")
-                    </h4>
+                    <div class="mt-1">
+
+                        @if (estadoCredito == "ACTIVO")
+                        {
+                            <span class="badge bg-success fs-6">
+                                ACTIVO
+                            </span>
+                        }
+                        else if (estadoCredito == "ATRASADO")
+                        {
+                            <span class="badge bg-danger fs-6">
+                                ATRASADO
+                            </span>
+                        }
+                        else if (estadoCredito == "CANCELADO")
+                        {
+                            <span class="badge bg-secondary fs-6">
+                                CANCELADO
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary fs-6">
+                                @estadoCredito
+                            </span>
+                        }
+
+                    </div>
 
                 </div>
 
@@ -146,20 +234,20 @@
 
         </div>
 
-        <div class="col-md-4 mb-3">
+
+        <!-- CUOTAS PENDIENTES -->
+        <div class="col-md-4">
 
             <div class="card shadow-sm h-100">
 
                 <div class="card-body">
 
-                    <h6 class="text-muted">
+                    <small class="text-muted">
                         Cuotas pendientes
-                    </h6>
+                    </small>
 
-                    <h4>
-                        @(tieneCredito
-                            ? ViewBag.CuotasPendientes
-                            : 0)
+                    <h4 class="mb-0">
+                        @cuotasPendientes
                     </h4>
 
                 </div>
@@ -168,20 +256,20 @@
 
         </div>
 
-        <div class="col-md-4 mb-3">
+
+        <!-- TOTAL PAGADO -->
+        <div class="col-md-4">
 
             <div class="card shadow-sm h-100">
 
                 <div class="card-body">
 
-                    <h6 class="text-muted">
+                    <small class="text-muted">
                         Total pagado
-                    </h6>
+                    </small>
 
-                    <h4>
-                        Q @(tieneCredito
-                            ? ViewBag.TotalPagado.ToString("N2")
-                            : "0.00")
+                    <h4 class="mb-0">
+                        Q @totalPagado.ToString("N2")
                     </h4>
 
                 </div>
@@ -191,39 +279,62 @@
         </div>
 
     </div>
+
 
     <hr />
 
-    <h4 class="mb-3">
-        Consultas
-    </h4>
 
-    <div class="row">
+    <!-- =====================================================
+         CONSULTAS
+         ===================================================== -->
 
-        <div class="col-md-4 mb-3">
+    <div class="mb-3">
 
-            <div class="card h-100">
+        <h4>
+            Consultas
+        </h4>
+
+    </div>
+
+
+    <div class="row g-3">
+
+        <!-- =================================================
+             MI CRÉDITO
+             ================================================= -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm h-100">
 
                 <div class="card-body">
 
-                    <h5>Mi crédito</h5>
+                    <h5>
+                        Mi crédito
+                    </h5>
 
-                    <p>
+                    <p class="text-muted">
                         Consultar información de mi crédito.
                     </p>
 
                     @if (tieneCredito)
                     {
-                        <a href="#"
+                        <a asp-controller="Cliente"
+                           asp-action="Credito"
                            class="btn btn-primary">
+
                             Ver crédito
+
                         </a>
                     }
                     else
                     {
-                        <button class="btn btn-secondary"
+                        <button type="button"
+                                class="btn btn-secondary"
                                 disabled>
+
                             Sin crédito
+
                         </button>
                     }
 
@@ -233,33 +344,43 @@
 
         </div>
 
-        <div class="col-md-4 mb-3">
 
-            <div class="card h-100">
+        <!-- =================================================
+             MIS CUOTAS
+             ================================================= -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm h-100">
 
                 <div class="card-body">
 
-                    <h5>Mis cuotas</h5>
+                    <h5>
+                        Mis cuotas
+                    </h5>
 
-                    <p>
+                    <p class="text-muted">
                         Consultar calendario y estado de cuotas.
                     </p>
 
                     @if (tieneCredito)
                     {
                         <a asp-controller="Cliente"
-                            asp-action="Cuotas"
-                            class="btn btn-outline-primary">
+                           asp-action="Cuotas"
+                           class="btn btn-outline-primary">
 
-                                Ver cuotas
+                            Ver cuotas
 
-                             </a>
+                        </a>
                     }
                     else
                     {
-                        <button class="btn btn-secondary"
+                        <button type="button"
+                                class="btn btn-secondary"
                                 disabled>
+
                             Sin cuotas
+
                         </button>
                     }
 
@@ -269,35 +390,32 @@
 
         </div>
 
-        <div class="col-md-4 mb-3">
 
-            <div class="card h-100">
+        <!-- =================================================
+             MIS PAGOS
+             ================================================= -->
+
+        <div class="col-md-4">
+
+            <div class="card shadow-sm h-100">
 
                 <div class="card-body">
 
-                    <h5>Mis pagos</h5>
+                    <h5>
+                        Mis pagos
+                    </h5>
 
-                    <p>
+                    <p class="text-muted">
                         Consultar historial de pagos realizados.
                     </p>
 
-                    @if (tieneCredito)
-                    {
-                        <a asp-controller="Cliente"
-                            asp-action="EstadoCuenta"
-                            class="btn btn-outline-primary">
+                    <a asp-controller="Cliente"
+                       asp-action="EstadoCuenta"
+                       class="btn btn-outline-primary">
 
-                                Ver estado de cuenta
+                        Ver estado de cuenta
 
-                            </a>
-                    }
-                    else
-                    {
-                        <button class="btn btn-secondary"
-                                disabled>
-                            Sin pagos
-                        </button>
-                    }
+                    </a>
 
                 </div>
 

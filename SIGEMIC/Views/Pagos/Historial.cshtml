@@ -1,0 +1,521 @@
+@model IEnumerable<SIGEMIC.Models.Pago>
+
+@{
+    ViewData["Title"] = "Historial de pagos";
+
+    var totalMovimientos =
+        Model.Count();
+
+    var totalRecibido =
+        Model.Sum(p => p.MontoTotal);
+
+    var totalCapital =
+        Model.Sum(p => p.CapitalAplicado);
+
+    var totalAbonos =
+        Model
+            .Where(p =>
+                p.TipoOperacion == "ABONO_EXTRAORDINARIO")
+            .Sum(p =>
+                p.MontoTotal);
+}
+
+<div class="container mt-4">
+
+    <!-- =====================================================
+         ENCABEZADO
+         ===================================================== -->
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h2>Historial de pagos</h2>
+
+            <p class="text-muted mb-0">
+                Consulta de pagos y abonos registrados en SIGEMIC.
+            </p>
+        </div>
+
+        <div class="d-flex gap-2">
+
+            <a asp-controller="Pagos"
+               asp-action="Index"
+               class="btn btn-primary">
+
+                Registrar pago
+
+            </a>
+
+            @if (User.IsInRole("ADMINISTRADOR"))
+            {
+                <a asp-controller="Admin"
+                   asp-action="Index"
+                   class="btn btn-secondary">
+
+                    Volver al dashboard
+
+                </a>
+            }
+            else if (User.IsInRole("CAJERO"))
+            {
+                <a asp-controller="Cajero"
+                   asp-action="Index"
+                   class="btn btn-secondary">
+
+                    Volver al dashboard
+
+                </a>
+            }
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         FILTROS DE BÚSQUEDA
+         ===================================================== -->
+
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header bg-white">
+
+            <h5 class="mb-0">
+                Filtros de búsqueda
+            </h5>
+
+        </div>
+
+        <div class="card-body">
+
+            <form asp-controller="Pagos"
+                  asp-action="Historial"
+                  method="get"
+                  autocomplete="off">
+
+                <div class="row g-3">
+
+                    <!-- CLIENTE -->
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+                            Cliente
+                        </label>
+
+                        <input type="text"
+                               name="cliente"
+                               value="@ViewBag.Cliente"
+                               class="form-control"
+                               placeholder="Nombre o código"
+                               autocomplete="off" />
+
+                    </div>
+
+
+                    <!-- RECIBO -->
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+                            Recibo
+                        </label>
+
+                        <input type="text"
+                               name="recibo"
+                               value="@ViewBag.Recibo"
+                               class="form-control"
+                               placeholder="REC-000001"
+                               autocomplete="off" />
+
+                    </div>
+
+
+                    <!-- CRÉDITO -->
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+                            Crédito
+                        </label>
+
+                        <input type="text"
+                               name="credito"
+                               value="@ViewBag.Credito"
+                               class="form-control"
+                               placeholder="CR-000001"
+                               autocomplete="off" />
+
+                    </div>
+
+
+                    <!-- TIPO DE OPERACIÓN -->
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+                            Tipo de operación
+                        </label>
+
+                        <select name="tipoOperacion"
+                                class="form-select">
+
+                            <option value="">
+                                Todas
+                            </option>
+
+                            @if (ViewBag.TipoOperacion == "PAGO_CUOTA")
+                            {
+                                <option value="PAGO_CUOTA"
+                                        selected>
+
+                                    Pago de cuota
+
+                                </option>
+                            }
+                            else
+                            {
+                                <option value="PAGO_CUOTA">
+
+                                    Pago de cuota
+
+                                </option>
+                            }
+
+                            @if (ViewBag.TipoOperacion == "ABONO_EXTRAORDINARIO")
+                            {
+                                <option value="ABONO_EXTRAORDINARIO"
+                                        selected>
+
+                                    Abono a capital
+
+                                </option>
+                            }
+                            else
+                            {
+                                <option value="ABONO_EXTRAORDINARIO">
+
+                                    Abono a capital
+
+                                </option>
+                            }
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+
+                <!-- BOTONES -->
+                <div class="d-flex gap-2 mt-3">
+
+                    <button type="submit"
+                            class="btn btn-primary">
+
+                        Buscar
+
+                    </button>
+
+                    <a asp-controller="Pagos"
+                       asp-action="Historial"
+                       class="btn btn-outline-secondary">
+
+                        Limpiar filtros
+
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         RESUMEN DE RESULTADOS
+         ===================================================== -->
+
+    <div class="row g-3 mb-4">
+
+        <!-- MOVIMIENTOS -->
+        <div class="col-md-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Movimientos encontrados
+                    </small>
+
+                    <h4 class="mb-0">
+                        @totalMovimientos
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- TOTAL RECIBIDO -->
+        <div class="col-md-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Total recibido
+                    </small>
+
+                    <h4 class="mb-0">
+                        Q @totalRecibido.ToString("N2")
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- CAPITAL -->
+        <div class="col-md-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Capital aplicado
+                    </small>
+
+                    <h4 class="mb-0">
+                        Q @totalCapital.ToString("N2")
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ABONOS -->
+        <div class="col-md-3">
+
+            <div class="card shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Abonos extraordinarios
+                    </small>
+
+                    <h4 class="mb-0">
+                        Q @totalAbonos.ToString("N2")
+                    </h4>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         TABLA DE RESULTADOS
+         ===================================================== -->
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            @if (Model != null && Model.Any())
+            {
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle">
+
+                        <thead>
+
+                            <tr>
+                                <th>Recibo</th>
+                                <th>Fecha</th>
+                                <th>Cliente</th>
+                                <th>Crédito</th>
+                                <th>Operación</th>
+                                <th>Cuota</th>
+                                <th>Forma</th>
+                                <th>Capital</th>
+                                <th>Interés</th>
+                                <th>Total</th>
+                                <th>Registrado por</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            @foreach (var pago in Model)
+                            {
+                                <tr>
+
+                                    <!-- RECIBO -->
+                                    <td>
+
+                                        <strong>
+                                            @pago.NumeroRecibo
+                                        </strong>
+
+                                    </td>
+
+
+                                    <!-- FECHA -->
+                                    <td>
+
+                                        @pago.FechaPago.ToString("dd/MM/yyyy HH:mm")
+
+                                    </td>
+
+
+                                    <!-- CLIENTE -->
+                                    <td>
+
+                                        @pago.Credito.Cliente.Usuario.Nombres
+                                        @pago.Credito.Cliente.Usuario.Apellidos
+
+                                        <div class="small text-muted">
+
+                                            @pago.Credito.Cliente.CodigoCliente
+
+                                        </div>
+
+                                    </td>
+
+
+                                    <!-- CRÉDITO -->
+                                    <td>
+
+                                        <a asp-controller="Creditos"
+                                           asp-action="Details"
+                                           asp-route-id="@pago.IdCredito"
+                                           class="text-decoration-none">
+
+                                            @pago.Credito.CodigoCredito
+
+                                        </a>
+
+                                    </td>
+
+
+                                    <!-- OPERACIÓN -->
+                                    <td>
+
+                                        @if (pago.TipoOperacion ==
+                                            "ABONO_EXTRAORDINARIO")
+                                        {
+                                            <span class="badge bg-success">
+
+                                                ABONO A CAPITAL
+
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-primary">
+
+                                                PAGO DE CUOTA
+
+                                            </span>
+                                        }
+
+                                    </td>
+
+
+                                    <!-- CUOTA -->
+                                    <td>
+
+                                        @if (pago.Cuota != null)
+                                        {
+                                            <span>
+                                                #@pago.Cuota.NumeroCuota
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">
+                                                —
+                                            </span>
+                                        }
+
+                                    </td>
+
+
+                                    <!-- FORMA DE PAGO -->
+                                    <td>
+
+                                        @pago.FormaPago.Nombre
+
+                                    </td>
+
+
+                                    <!-- CAPITAL -->
+                                    <td>
+
+                                        Q @pago.CapitalAplicado.ToString("N2")
+
+                                    </td>
+
+
+                                    <!-- INTERÉS -->
+                                    <td>
+
+                                        Q @pago.InteresAplicado.ToString("N2")
+
+                                    </td>
+
+
+                                    <!-- TOTAL -->
+                                    <td>
+
+                                        <strong>
+                                            Q @pago.MontoTotal.ToString("N2")
+                                        </strong>
+
+                                    </td>
+
+
+                                    <!-- USUARIO -->
+                                    <td>
+
+                                        @pago.Usuario.Username
+
+                                    </td>
+
+                                </tr>
+                            }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-warning mb-0">
+
+                    No se encontraron movimientos con los filtros seleccionados.
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+
+</div>

@@ -1,8 +1,214 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Inicio";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container py-5">
+
+    <!-- =====================================================
+         HERO PRINCIPAL
+         ===================================================== -->
+
+    <div class="row align-items-center mb-5">
+
+        <div class="col-lg-7 mb-4 mb-lg-0">
+
+            <span class="badge bg-primary mb-3 px-3 py-2">
+                Sistema de Gestión de Microcréditos
+            </span>
+
+            <h1 class="display-5 fw-bold mb-3">
+                Bienvenido a SIGEMIC
+            </h1>
+
+            <p class="lead text-muted mb-4">
+                Plataforma para administrar clientes, créditos,
+                cuotas, pagos y seguimiento financiero de forma
+                organizada, segura y centralizada.
+            </p>
+
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                @if (User.IsInRole("ADMINISTRADOR"))
+                {
+                    <a asp-controller="Admin"
+                       asp-action="Index"
+                       class="btn btn-primary btn-lg me-2">
+
+                        Ir al dashboard
+
+                    </a>
+                }
+                else if (User.IsInRole("CAJERO"))
+                {
+                    <a asp-controller="Cajero"
+                       asp-action="Index"
+                       class="btn btn-primary btn-lg me-2">
+
+                        Ir al dashboard
+
+                    </a>
+                }
+                else if (User.IsInRole("CLIENTE"))
+                {
+                    <a asp-controller="Cliente"
+                       asp-action="Index"
+                       class="btn btn-primary btn-lg me-2">
+
+                        Ir a mi cuenta
+
+                    </a>
+                }
+            }
+
+        </div>
+
+
+        <!-- TARJETA LATERAL -->
+        <div class="col-lg-5">
+
+            <div class="card shadow border-0">
+
+                <div class="card-body p-4">
+
+                    <h4 class="mb-3">
+                        ¿Qué puedes hacer en SIGEMIC?
+                    </h4>
+
+                    <div class="mb-3">
+
+                        <strong>
+                            Gestión de clientes
+                        </strong>
+
+                        <p class="text-muted mb-0">
+                            Registro, edición y control del estado
+                            de cada cliente.
+                        </p>
+
+                    </div>
+
+                    <hr />
+
+                    <div class="mb-3">
+
+                        <strong>
+                            Control de créditos
+                        </strong>
+
+                        <p class="text-muted mb-0">
+                            Otorgamiento, tasas, plazos y tablas
+                            de amortización.
+                        </p>
+
+                    </div>
+
+                    <hr />
+
+                    <div>
+
+                        <strong>
+                            Pagos y seguimiento
+                        </strong>
+
+                        <p class="text-muted mb-0">
+                            Cuotas, pagos parciales, abonos a capital
+                            y estado de cuenta.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         CARACTERÍSTICAS
+         ===================================================== -->
+
+    <div class="row g-4">
+
+        <div class="col-md-4">
+
+            <div class="card h-100 shadow-sm border-0">
+
+                <div class="card-body p-4">
+
+                    <div class="fs-1 mb-3">
+                        👥
+                    </div>
+
+                    <h5>
+                        Clientes
+                    </h5>
+
+                    <p class="text-muted">
+                        Información centralizada de cada cliente,
+                        acceso al sistema y relación con sus créditos.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-4">
+
+            <div class="card h-100 shadow-sm border-0">
+
+                <div class="card-body p-4">
+
+                    <div class="fs-1 mb-3">
+                        💳
+                    </div>
+
+                    <h5>
+                        Microcréditos
+                    </h5>
+
+                    <p class="text-muted">
+                        Gestión de montos, tasas, plazos, cuotas
+                        y saldo de capital.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-md-4">
+
+            <div class="card h-100 shadow-sm border-0">
+
+                <div class="card-body p-4">
+
+                    <div class="fs-1 mb-3">
+                        📊
+                    </div>
+
+                    <h5>
+                        Seguimiento
+                    </h5>
+
+                    <p class="text-muted">
+                        Historial de pagos, amortización y control
+                        financiero en tiempo real.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
 </div>

@@ -17,8 +17,6 @@ namespace SIGEMIC.Controllers
             _context = context;
         }
 
-        // DASHBOARD DEL CLIENTE
-
         public async Task<IActionResult> Index()
         {
             var idUsuarioTexto =
@@ -51,9 +49,13 @@ namespace SIGEMIC.Controllers
                     ))
                 .OrderByDescending(c =>
                     c.FechaOtorgamiento)
+                .ThenByDescending(c =>
+                    c.IdCredito)
                 .FirstOrDefaultAsync();
 
-            ViewBag.CodigoCliente = cliente.CodigoCliente;
+            ViewBag.CodigoCliente =
+                cliente.CodigoCliente;
+
 
             if (credito != null)
             {
@@ -72,33 +74,93 @@ namespace SIGEMIC.Controllers
                 ViewBag.CuotasPendientes =
                     await _context.Cuotas
                         .CountAsync(c =>
-                            c.IdCredito == credito.IdCredito &&
-                            c.Estado != "PAGADA");
+                            c.IdCredito == credito.IdCredito && c.Estado != "PAGADA");
 
                 ViewBag.TotalPagado =
                     await _context.Pagos
                         .Where(p =>
-                            p.IdCredito == credito.IdCredito)
+                            p.IdCredito ==
+                                credito.IdCredito)
                         .SumAsync(p =>
                             (decimal?)p.MontoTotal)
-                        ?? 0m;
+                    ?? 0m;
             }
             else
             {
-                ViewBag.TieneCredito = false;
+                ViewBag.TieneCredito =  false;
+
                 ViewBag.CodigoCredito = null;
+
                 ViewBag.MontoOriginal = 0m;
+
                 ViewBag.SaldoCapital = 0m;
+
                 ViewBag.CuotaOriginal = 0m;
+
                 ViewBag.EstadoCredito = "SIN CRÉDITO";
+
                 ViewBag.CuotasPendientes = 0;
+
                 ViewBag.TotalPagado = 0m;
             }
 
             return View();
         }
 
-        // MIS CUOTAS
+        public async Task<IActionResult> Credito()
+        {
+            var idUsuarioTexto =
+                User.FindFirstValue(
+                    ClaimTypes.NameIdentifier
+                );
+
+            if (!uint.TryParse(
+                idUsuarioTexto,
+                out uint idUsuario))
+            {
+                return Unauthorized();
+            }
+
+
+            var cliente = await _context.Clientes
+                .FirstOrDefaultAsync(c =>
+                    c.IdUsuario == idUsuario);
+
+            if (cliente == null)
+            {
+                return NotFound();
+            }
+
+            var credito = await _context.Creditos
+                .Include(c =>
+                    c.PlanCredito)
+                .Include(c =>
+                    c.Cuotas)
+                .Where(c =>
+                    c.IdCliente ==
+                        cliente.IdCliente &&
+                    (
+                        c.Estado == "ACTIVO" ||
+                        c.Estado == "ATRASADO"
+                    ))
+                .OrderByDescending(c =>
+                    c.FechaOtorgamiento)
+                .ThenByDescending(c =>
+                    c.IdCredito)
+                .FirstOrDefaultAsync();
+
+            if (credito == null)
+            {
+                TempData["MensajeInfo"] =
+                    "Actualmente no tienes un crédito activo.";
+
+                return RedirectToAction(
+                    nameof(Index)
+                );
+            }
+
+            return View(credito);
+        }
 
         public async Task<IActionResult> Cuotas()
         {
@@ -114,6 +176,7 @@ namespace SIGEMIC.Controllers
                 return Unauthorized();
             }
 
+
             var cliente = await _context.Clientes
                 .FirstOrDefaultAsync(c =>
                     c.IdUsuario == idUsuario);
@@ -123,15 +186,19 @@ namespace SIGEMIC.Controllers
                 return NotFound();
             }
 
+
             var credito = await _context.Creditos
                 .Where(c =>
-                    c.IdCliente == cliente.IdCliente &&
+                    c.IdCliente ==
+                        cliente.IdCliente &&
                     (
                         c.Estado == "ACTIVO" ||
                         c.Estado == "ATRASADO"
                     ))
                 .OrderByDescending(c =>
                     c.FechaOtorgamiento)
+                .ThenByDescending(c =>
+                    c.IdCredito)
                 .FirstOrDefaultAsync();
 
             if (credito == null)
@@ -144,28 +211,33 @@ namespace SIGEMIC.Controllers
                 );
             }
 
+
             var cuotas = await _context.Cuotas
                 .Where(c =>
-                    c.IdCredito == credito.IdCredito)
+                    c.IdCredito ==
+                        credito.IdCredito)
                 .OrderBy(c =>
                     c.NumeroCuota)
                 .ToListAsync();
 
-            ViewBag.CodigoCredito = credito.CodigoCredito;
+            ViewBag.CodigoCredito =
+                credito.CodigoCredito;
 
-            ViewBag.CuotaOriginal = credito.CuotaOriginal;
+            ViewBag.CuotaOriginal =
+                credito.CuotaOriginal;
 
-            ViewBag.MontoOriginal = credito.MontoOriginal;
+            ViewBag.MontoOriginal =
+                credito.MontoOriginal;
 
-            ViewBag.SaldoCapital = credito.SaldoCapital;
+            ViewBag.SaldoCapital =
+                credito.SaldoCapital;
 
-            ViewBag.EstadoCredito = credito.Estado;
+            ViewBag.EstadoCredito =
+                credito.Estado;
 
             return View(cuotas);
         }
 
-        // ESTADO DE CUENTA / HISTORIAL DE PAGOS
-  
         public async Task<IActionResult> EstadoCuenta()
         {
             var idUsuarioTexto =
@@ -180,7 +252,6 @@ namespace SIGEMIC.Controllers
                 return Unauthorized();
             }
 
-            // BUSCAR CLIENTE
 
             var cliente = await _context.Clientes
                 .FirstOrDefaultAsync(c =>
@@ -192,11 +263,10 @@ namespace SIGEMIC.Controllers
             }
 
 
-            // OBTENER EL CRÉDITO MÁS RECIENTE
-
             var credito = await _context.Creditos
                 .Where(c =>
-                    c.IdCliente == cliente.IdCliente)
+                    c.IdCliente ==
+                        cliente.IdCliente)
                 .OrderByDescending(c =>
                     c.FechaOtorgamiento)
                 .ThenByDescending(c =>
@@ -213,11 +283,14 @@ namespace SIGEMIC.Controllers
                 );
             }
 
-            // OBTENER PAGOS DEL CRÉDITO
-
-            var pagos = await _context.Pagos.Include(p => p.Cuota).Include(p => p.FormaPago)
+            var pagos = await _context.Pagos
+                .Include(p =>
+                    p.Cuota)
+                .Include(p =>
+                    p.FormaPago)
                 .Where(p =>
-                    p.IdCredito == credito.IdCredito)
+                    p.IdCredito ==
+                        credito.IdCredito)
                 .OrderByDescending(p =>
                     p.FechaPago)
                 .ThenByDescending(p =>
@@ -225,54 +298,87 @@ namespace SIGEMIC.Controllers
                 .Select(p =>
                     new PagoHistorialViewModel
                     {
-                        IdPago = p.IdPago,
+                        IdPago =
+                            p.IdPago,
 
-                        NumeroRecibo = p.NumeroRecibo,
+                        NumeroRecibo =
+                            p.NumeroRecibo,
 
-                        FechaPago = p.FechaPago,
+                        FechaPago =
+                            p.FechaPago,
 
-                        TipoOperacion = p.TipoOperacion,
+                        TipoOperacion =
+                            p.TipoOperacion,
 
-                        NumeroCuota = p.Cuota != null? p.Cuota.NumeroCuota: null,
+                        NumeroCuota =
+                            p.Cuota != null
+                                ? p.Cuota.NumeroCuota
+                                : null,
 
-                        FormaPago = p.FormaPago.Nombre,
+                        FormaPago =
+                            p.FormaPago.Nombre,
 
-                        MontoTotal = p.MontoTotal,
+                        MontoTotal =
+                            p.MontoTotal,
 
-                        CapitalAplicado = p.CapitalAplicado,
+                        CapitalAplicado =
+                            p.CapitalAplicado,
 
-                        InteresAplicado = p.InteresAplicado,
+                        InteresAplicado =
+                            p.InteresAplicado,
 
-                        MoraAplicada = p.MoraAplicada,
+                        MoraAplicada =
+                            p.MoraAplicada,
 
-                        Observacion = p.Observacion
+                        Observacion =
+                            p.Observacion
                     })
                 .ToListAsync();
 
-            // CREAR MODELO DEL ESTADO DE CUENTA
 
             var model =
                 new EstadoCuentaViewModel
                 {
-                    CodigoCliente = cliente.CodigoCliente,
+                    CodigoCliente =
+                        cliente.CodigoCliente,
 
-                    CodigoCredito = credito.CodigoCredito,
+                    CodigoCredito =
+                        credito.CodigoCredito,
 
-                    MontoOriginal = credito.MontoOriginal,
+                    MontoOriginal =
+                        credito.MontoOriginal,
 
-                    SaldoCapital = credito.SaldoCapital,
+                    SaldoCapital =
+                        credito.SaldoCapital,
 
-                    CuotaOriginal = credito.CuotaOriginal,
+                    CuotaOriginal =
+                        credito.CuotaOriginal,
 
-                    EstadoCredito = credito.Estado,
+                    EstadoCredito =
+                        credito.Estado,
 
-                    TotalPagado = pagos.Sum(p => p.MontoTotal),
+                    TotalPagado =
+                        pagos.Sum(p =>
+                            p.MontoTotal),
 
-                    TotalCapitalPagado = pagos.Sum(p => p.CapitalAplicado),
+                    TotalCapitalPagado =
+                        pagos.Sum(p =>
+                            p.CapitalAplicado),
 
-                    TotalInteresPagado = pagos.Sum(p => p.InteresAplicado),
+                    TotalInteresPagado =
+                        pagos.Sum(p =>
+                            p.InteresAplicado),
 
-                    TotalAbonosExtraordinarios = pagos.Where(p => p.TipoOperacion == "ABONO_EXTRAORDINARIO").Sum(p =>p.MontoTotal),Pagos = pagos
+                    TotalAbonosExtraordinarios =
+                        pagos
+                            .Where(p =>
+                                p.TipoOperacion ==
+                                "ABONO_EXTRAORDINARIO")
+                            .Sum(p =>
+                                p.MontoTotal),
+
+                    Pagos =
+                        pagos
                 };
 
             return View(model);
