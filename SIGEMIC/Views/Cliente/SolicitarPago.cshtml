@@ -1,0 +1,646 @@
+@model SIGEMIC.Models.SolicitarPagoViewModel
+
+@{
+    ViewData["Title"] = "Solicitar pago";
+}
+
+
+<div class="container py-4">
+
+    <!-- =====================================================
+         ENCABEZADO
+         ===================================================== -->
+
+    <div class="mb-4">
+
+        <h2 class="fw-bold mb-1">
+            Solicitar pago
+        </h2>
+
+        <p class="text-muted mb-0">
+            Registra tu depósito y adjunta el comprobante
+            para que sea revisado por un cajero o administrador.
+        </p>
+
+    </div>
+
+
+    <!-- =====================================================
+         MENSAJE IMPORTANTE
+         ===================================================== -->
+
+    <div class="alert alert-info">
+
+        <strong>Importante:</strong>
+
+        enviar esta solicitud no aplica el pago inmediatamente.
+
+        Tu comprobante será revisado y el pago se reflejará
+        en tu crédito únicamente después de ser aprobado.
+
+    </div>
+
+
+    @if (TempData["Exito"] != null)
+    {
+        <div class="alert alert-success">
+
+            @TempData["Exito"]
+
+        </div>
+    }
+
+
+    <div class="row">
+
+        <!-- =================================================
+             FORMULARIO
+             ================================================= -->
+
+        <div class="col-lg-8">
+
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-body p-4">
+
+                    <form asp-action="SolicitarPago"
+                          method="post"
+                          enctype="multipart/form-data">
+
+                        @Html.AntiForgeryToken()
+
+
+                        <div asp-validation-summary="ModelOnly"
+                             class="text-danger mb-3">
+                        </div>
+
+
+                        <!-- TIPO OPERACIÓN -->
+
+                        <div class="mb-3">
+
+                            <label asp-for="TipoOperacion"
+                                   class="form-label fw-semibold">
+                            </label>
+
+                            <select asp-for="TipoOperacion"
+                                    id="TipoOperacion"
+                                    class="form-select">
+
+                                <option value="PAGO_CUOTA">
+                                    Pago de cuota
+                                </option>
+
+                                <option value="ABONO_EXTRAORDINARIO">
+                                    Abono extraordinario a capital
+                                </option>
+
+                            </select>
+
+                            <span asp-validation-for="TipoOperacion"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+
+                        <!-- CRÉDITO -->
+
+                        <div class="mb-3">
+
+                            <label asp-for="IdCredito"
+                                   class="form-label fw-semibold">
+                            </label>
+
+                            <select asp-for="IdCredito"
+                                    asp-items="Model.Creditos"
+                                    id="IdCredito"
+                                    class="form-select">
+                            </select>
+
+                            <span asp-validation-for="IdCredito"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+
+                        <!-- CUOTA -->
+
+                        <div id="contenedorCuota"
+                             class="mb-3">
+
+                            <label asp-for="IdCuota"
+                                   class="form-label fw-semibold">
+                            </label>
+
+                            <select asp-for="IdCuota"
+                                    asp-items="Model.Cuotas"
+                                    id="IdCuota"
+                                    class="form-select">
+
+                                <option value="">
+                                    -- Seleccione una cuota --
+                                </option>
+
+                            </select>
+
+                            <span asp-validation-for="IdCuota"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+
+                        <hr class="my-4" />
+
+
+                        <!-- BANCO -->
+
+                        <div class="mb-3">
+
+                            <label asp-for="IdBanco"
+                                   class="form-label fw-semibold">
+                            </label>
+
+                            <select asp-for="IdBanco"
+                                    id="IdBanco"
+                                    class="form-select">
+
+                                <option value="">
+                                    -- Seleccione un banco --
+                                </option>
+
+                                @foreach (var banco in Model.Bancos)
+                                {
+                                    <option value="@banco.IdBanco"
+                                            data-cuenta="@banco.NumeroCuenta"
+                                            data-tipo="@banco.TipoCuenta"
+                                            data-beneficiario="@banco.Beneficiario">
+
+                                        @banco.Nombre
+
+                                    </option>
+                                }
+
+                            </select>
+
+                            <span asp-validation-for="IdBanco"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+
+                        <!-- INFORMACIÓN DEL BANCO -->
+
+                        <div id="infoBanco"
+                             class="alert alert-secondary"
+                             style="display:none;">
+
+                            <div class="row">
+
+                                <div class="col-md-4">
+
+                                    <small class="text-muted">
+                                        Número de cuenta
+                                    </small>
+
+                                    <div class="fw-semibold"
+                                         id="numeroCuenta">
+                                    </div>
+
+                                </div>
+
+
+                                <div class="col-md-4">
+
+                                    <small class="text-muted">
+                                        Tipo de cuenta
+                                    </small>
+
+                                    <div class="fw-semibold"
+                                         id="tipoCuenta">
+                                    </div>
+
+                                </div>
+
+
+                                <div class="col-md-4">
+
+                                    <small class="text-muted">
+                                        Beneficiario
+                                    </small>
+
+                                    <div class="fw-semibold"
+                                         id="beneficiario">
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- MONTO -->
+
+                        <div class="mb-3">
+
+                            <label asp-for="Monto"
+                                   class="form-label fw-semibold">
+                            </label>
+
+                            <div class="input-group">
+
+                                <span class="input-group-text">
+                                    Q
+                                </span>
+
+                                <input asp-for="Monto"
+                                       class="form-control"
+                                       step="0.01"
+                                       min="0.01" />
+
+                            </div>
+
+                            <span asp-validation-for="Monto"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+
+                        <!-- BOLETA -->
+
+                        <div class="mb-3">
+
+                            <label asp-for="NumeroBoleta"
+                                   class="form-label fw-semibold">
+                            </label>
+
+                            <input asp-for="NumeroBoleta"
+                                   class="form-control"
+                                   autocomplete="off"
+                                   placeholder="Ej. 458796321" />
+
+                            <span asp-validation-for="NumeroBoleta"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+
+                        <!-- COMPROBANTE -->
+
+                        <div class="mb-4">
+
+                            <label asp-for="Comprobante"
+                                   class="form-label fw-semibold">
+                            </label>
+
+                            <input asp-for="Comprobante"
+                                   class="form-control"
+                                   type="file"
+                                   accept=".jpg,.jpeg,.png,.pdf" />
+
+                            <div class="form-text">
+
+                                Formatos permitidos:
+                                JPG, JPEG, PNG o PDF.
+                                Máximo 5 MB.
+
+                            </div>
+
+                            <span asp-validation-for="Comprobante"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+
+                        <!-- BOTONES -->
+
+                        <div class="d-flex gap-2">
+
+                            <button type="submit"
+                                    class="btn btn-primary">
+
+                                Enviar solicitud
+
+                            </button>
+
+
+                            <a asp-controller="Cliente"
+                               asp-action="Index"
+                               class="btn btn-outline-secondary">
+
+                                Regresar
+
+                            </a>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             INFORMACIÓN
+             ================================================= -->
+
+        <div class="col-lg-4 mt-4 mt-lg-0">
+
+            <div class="card border-0 shadow-sm">
+
+                <div class="card-body">
+
+                    <h5 class="fw-bold">
+                        Proceso de revisión
+                    </h5>
+
+                    <hr />
+
+
+                    <div class="mb-3">
+
+                        <span class="badge bg-warning text-dark">
+                            1. Pendiente
+                        </span>
+
+                        <p class="small text-muted mt-2 mb-0">
+
+                            Tu solicitud será enviada para revisión.
+
+                        </p>
+
+                    </div>
+
+
+                    <div class="mb-3">
+
+                        <span class="badge bg-success">
+                            2. Aprobada
+                        </span>
+
+                        <p class="small text-muted mt-2 mb-0">
+
+                            El pago se aplicará a tu crédito.
+
+                        </p>
+
+                    </div>
+
+
+                    <div>
+
+                        <span class="badge bg-danger">
+                            Rechazada
+                        </span>
+
+                        <p class="small text-muted mt-2 mb-0">
+
+                            Si existe algún problema con el comprobante,
+                            podrás consultar el motivo del rechazo.
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+@section Scripts {
+
+    <partial name="_ValidationScriptsPartial" />
+
+
+    <script>
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            function () {
+
+                const tipoOperacion =
+                    document.getElementById(
+                        "TipoOperacion"
+                    );
+
+                const credito =
+                    document.getElementById(
+                        "IdCredito"
+                    );
+
+                const cuota =
+                    document.getElementById(
+                        "IdCuota"
+                    );
+
+                const contenedorCuota =
+                    document.getElementById(
+                        "contenedorCuota"
+                    );
+
+                const banco =
+                    document.getElementById(
+                        "IdBanco"
+                    );
+
+                const infoBanco =
+                    document.getElementById(
+                        "infoBanco"
+                    );
+
+
+                // =============================================
+                // TIPO OPERACIÓN
+                // =============================================
+
+                function actualizarTipoOperacion() {
+
+                    if (
+                        tipoOperacion.value ===
+                        "ABONO_EXTRAORDINARIO"
+                    ) {
+
+                        contenedorCuota.style.display =
+                            "none";
+
+                        cuota.value =
+                            "";
+
+                    }
+                    else {
+
+                        contenedorCuota.style.display =
+                            "";
+
+                        cargarCuotas();
+
+                    }
+
+                }
+
+
+                // =============================================
+                // CARGAR CUOTAS
+                // =============================================
+
+                async function cargarCuotas() {
+
+                    if (
+                        !credito.value ||
+                        tipoOperacion.value !==
+                        "PAGO_CUOTA"
+                    ) {
+                        return;
+                    }
+
+
+                    cuota.innerHTML =
+                        '<option value="">Cargando...</option>';
+
+
+                    const respuesta =
+                        await fetch(
+                            '@Url.Action("CuotasPendientesPorCredito", "Cliente")'
+                            +
+                            '?idCredito='
+                            +
+                            credito.value
+                        );
+
+
+                    if (!respuesta.ok) {
+
+                        cuota.innerHTML =
+                            '<option value="">No fue posible cargar las cuotas</option>';
+
+                        return;
+                    }
+
+
+                    const datos =
+                        await respuesta.json();
+
+
+                    cuota.innerHTML =
+                        '<option value="">-- Seleccione una cuota --</option>';
+
+
+                    datos.forEach(function (item) {
+
+                        const opcion =
+                            document.createElement(
+                                "option"
+                            );
+
+                        opcion.value =
+                            item.idCuota;
+
+                        opcion.textContent =
+                            "Cuota #" +
+                            item.numeroCuota +
+                            " - Q" +
+                            Number(
+                                item.saldoCuota
+                            ).toFixed(2) +
+                            " - " +
+                            item.fechaVencimiento;
+
+                        cuota.appendChild(
+                            opcion
+                        );
+
+                    });
+
+                }
+
+
+                // =============================================
+                // INFORMACIÓN DEL BANCO
+                // =============================================
+
+                function actualizarBanco() {
+
+                    const opcion =
+                        banco.options[
+                            banco.selectedIndex
+                        ];
+
+
+                    if (
+                        !opcion ||
+                        !opcion.value
+                    ) {
+
+                        infoBanco.style.display =
+                            "none";
+
+                        return;
+                    }
+
+
+                    document.getElementById(
+                        "numeroCuenta"
+                    ).textContent =
+                        opcion.dataset.cuenta;
+
+
+                    document.getElementById(
+                        "tipoCuenta"
+                    ).textContent =
+                        opcion.dataset.tipo;
+
+
+                    document.getElementById(
+                        "beneficiario"
+                    ).textContent =
+                        opcion.dataset.beneficiario;
+
+
+                    infoBanco.style.display =
+                        "";
+
+                }
+
+
+                tipoOperacion.addEventListener(
+                    "change",
+                    actualizarTipoOperacion
+                );
+
+
+                credito.addEventListener(
+                    "change",
+                    cargarCuotas
+                );
+
+
+                banco.addEventListener(
+                    "change",
+                    actualizarBanco
+                );
+
+
+                actualizarTipoOperacion();
+                actualizarBanco();
+
+            }
+        );
+
+    </script>
+}

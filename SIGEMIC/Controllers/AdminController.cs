@@ -15,14 +15,93 @@ namespace SIGEMIC.Controllers
             _context = context;
         }
 
+        // =====================================================
+        // DASHBOARD ADMINISTRADOR
+        // =====================================================
+
         public async Task<IActionResult> Index()
         {
-            ViewBag.TotalClientes = await _context.Clientes.CountAsync();
-            ViewBag.CreditosActivos = await _context.Creditos.CountAsync(c => c.Estado == "ACTIVO");
-            ViewBag.CreditosAtrasados = await _context.Creditos.CountAsync(c => c.Estado == "ATRASADO");
-            ViewBag.TotalPrestado = await _context.Creditos.SumAsync(c => (decimal?)c.MontoOriginal) ?? 0;
-            ViewBag.SaldoPendiente = await _context.Creditos.Where(c =>c.Estado == "ACTIVO" || c.Estado == "ATRASADO").SumAsync(c => (decimal?)c.SaldoCapital) ?? 0;
-            ViewBag.TotalPagos = await _context.Pagos.SumAsync(p => (decimal?)p.MontoTotal) ?? 0;
+            // =================================================
+            // CLIENTES
+            // =================================================
+
+            ViewBag.TotalClientes =
+                await _context.Clientes
+                    .CountAsync();
+
+
+            // =================================================
+            // CRÉDITOS ACTIVOS
+            // =================================================
+
+            ViewBag.CreditosActivos =
+                await _context.Creditos
+                    .CountAsync(c =>
+                        c.Estado == "ACTIVO"
+                    );
+
+
+            // =================================================
+            // CRÉDITOS ATRASADOS
+            // =================================================
+
+            ViewBag.CreditosAtrasados =
+                await _context.Creditos
+                    .CountAsync(c =>
+                        c.Estado == "ATRASADO"
+                    );
+
+
+            // =================================================
+            // TOTAL PRESTADO
+            // =================================================
+
+            ViewBag.TotalPrestado =
+                await _context.Creditos
+                    .SumAsync(c =>
+                        (decimal?)c.MontoOriginal
+                    )
+                ?? 0m;
+
+
+            // =================================================
+            // SALDO PENDIENTE
+            // =================================================
+
+            ViewBag.SaldoPendiente =
+                await _context.Creditos
+                    .Where(c =>
+                        c.Estado == "ACTIVO" ||
+                        c.Estado == "ATRASADO"
+                    )
+                    .SumAsync(c =>
+                        (decimal?)c.SaldoCapital
+                    )
+                ?? 0m;
+
+
+            // =================================================
+            // TOTAL RECIBIDO
+            // =================================================
+
+            ViewBag.TotalPagos =
+                await _context.Pagos
+                    .SumAsync(p =>
+                        (decimal?)p.MontoTotal
+                    )
+                ?? 0m;
+
+
+            // =================================================
+            // SOLICITUDES DE PAGO PENDIENTES
+            // =================================================
+
+            ViewBag.SolicitudesPendientes =
+                await _context.SolicitudesPago
+                    .CountAsync(s =>
+                        s.Estado == "PENDIENTE"
+                    );
+
 
             return View();
         }

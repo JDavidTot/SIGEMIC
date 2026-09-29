@@ -14,12 +14,72 @@ namespace SIGEMIC.Controllers
         {
             _context = context;
         }
+
+
+        // =====================================================
+        // DASHBOARD CAJERO
+        // =====================================================
+
         public async Task<IActionResult> Index()
         {
-            ViewBag.TotalClientes = await _context.Clientes.CountAsync();
-            ViewBag.CreditosActivos = await _context.Creditos.CountAsync(c => c.Estado == "ACTIVO");
-            ViewBag.CuotasPendientes = await _context.Cuotas.CountAsync(c =>c.Estado == "PENDIENTE" || c.Estado == "ATRASADA");
-            ViewBag.PagosHoy = await _context.Pagos.Where(p =>p.FechaPago.Date == DateTime.Today).SumAsync(p => (decimal?)p.MontoTotal) ?? 0;
+            // =================================================
+            // CLIENTES
+            // =================================================
+
+            ViewBag.TotalClientes =
+                await _context.Clientes
+                    .CountAsync();
+
+
+            // =================================================
+            // CRÉDITOS ACTIVOS
+            // =================================================
+
+            ViewBag.CreditosActivos =
+                await _context.Creditos
+                    .CountAsync(c =>
+                        c.Estado == "ACTIVO"
+                    );
+
+
+            // =================================================
+            // CUOTAS PENDIENTES O ATRASADAS
+            // =================================================
+
+            ViewBag.CuotasPendientes =
+                await _context.Cuotas
+                    .CountAsync(c =>
+                        c.Estado == "PENDIENTE" ||
+                        c.Estado == "ATRASADA"
+                    );
+
+
+            // =================================================
+            // PAGOS DE HOY
+            // =================================================
+
+            ViewBag.PagosHoy =
+                await _context.Pagos
+                    .Where(p =>
+                        p.FechaPago.Date ==
+                        DateTime.Today
+                    )
+                    .SumAsync(p =>
+                        (decimal?)p.MontoTotal
+                    )
+                ?? 0m;
+
+
+            // =================================================
+            // SOLICITUDES DE PAGO PENDIENTES
+            // =================================================
+
+            ViewBag.SolicitudesPendientes =
+                await _context.SolicitudesPago
+                    .CountAsync(s =>
+                        s.Estado == "PENDIENTE"
+                    );
+
 
             return View();
         }

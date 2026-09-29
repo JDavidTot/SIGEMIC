@@ -13,6 +13,11 @@
         @ViewData["Title"] - SIGEMIC
     </title>
 
+
+    <!-- =====================================================
+         ESTILOS
+         ===================================================== -->
+
     <link rel="stylesheet"
           href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
 
@@ -29,6 +34,7 @@
 
 <body class="bg-light">
 
+
     <!-- =====================================================
          BARRA SUPERIOR
          ===================================================== -->
@@ -39,7 +45,11 @@
 
             <div class="container">
 
-                <!-- LOGO / NOMBRE -->
+
+                <!-- =================================================
+                     LOGO
+                     ================================================= -->
+
                 <a class="navbar-brand fw-bold"
                    asp-controller="Home"
                    asp-action="Index">
@@ -49,7 +59,10 @@
                 </a>
 
 
-                <!-- BOTÓN MÓVIL -->
+                <!-- =================================================
+                     BOTÓN MÓVIL
+                     ================================================= -->
+
                 <button class="navbar-toggler"
                         type="button"
                         data-bs-toggle="collapse"
@@ -66,13 +79,18 @@
                 <div class="collapse navbar-collapse"
                      id="menuPrincipal">
 
+
                     <!-- =================================================
                          MENÚ IZQUIERDO
                          ================================================= -->
 
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 
-                        <!-- INICIO -->
+
+                        <!-- =================================================
+                             INICIO
+                             ================================================= -->
+
                         <li class="nav-item">
 
                             <a class="nav-link"
@@ -88,12 +106,14 @@
 
                         @if (User.Identity?.IsAuthenticated == true)
                         {
-                            <!-- =========================================
+
+                            <!-- =================================================
                                  ADMINISTRADOR
-                                 ========================================= -->
+                                 ================================================= -->
 
                             @if (User.IsInRole("ADMINISTRADOR"))
                             {
+
                                 <li class="nav-item">
 
                                     <a class="nav-link"
@@ -159,6 +179,21 @@
                                 </li>
 
 
+                                <!-- SOLICITUDES -->
+
+                                <li class="nav-item">
+
+                                    <a class="nav-link"
+                                       asp-controller="SolicitudesPago"
+                                       asp-action="Index">
+
+                                        Solicitudes
+
+                                    </a>
+
+                                </li>
+
+
                                 <li class="nav-item">
 
                                     <a class="nav-link"
@@ -182,11 +217,13 @@
                                     </a>
 
                                 </li>
+
                             }
 
 
                             else if (User.IsInRole("CAJERO"))
                             {
+
                                 <li class="nav-item">
 
                                     <a class="nav-link"
@@ -239,6 +276,21 @@
                                 </li>
 
 
+                                <!-- SOLICITUDES -->
+
+                                <li class="nav-item">
+
+                                    <a class="nav-link"
+                                       asp-controller="SolicitudesPago"
+                                       asp-action="Index">
+
+                                        Solicitudes
+
+                                    </a>
+
+                                </li>
+
+
                                 <li class="nav-item">
 
                                     <a class="nav-link"
@@ -250,11 +302,15 @@
                                     </a>
 
                                 </li>
+
                             }
+
+
 
 
                             else if (User.IsInRole("CLIENTE"))
                             {
+
                                 <li class="nav-item">
 
                                     <a class="nav-link"
@@ -305,7 +361,37 @@
                                     </a>
 
                                 </li>
+
+
+                                <li class="nav-item">
+
+                                    <a class="nav-link"
+                                       asp-controller="Cliente"
+                                       asp-action="SolicitarPago">
+
+                                        Solicitar pago
+
+                                    </a>
+
+                                </li>
+
+
+                                <!-- MIS SOLICITUDES -->
+
+                                <li class="nav-item">
+
+                                    <a class="nav-link"
+                                       asp-controller="Cliente"
+                                       asp-action="MisSolicitudes">
+
+                                        Mis solicitudes
+
+                                    </a>
+
+                                </li>
+
                             }
+
                         }
 
                     </ul>
@@ -317,11 +403,13 @@
 
                     @if (User.Identity?.IsAuthenticated == true)
                     {
+
                         <div class="d-flex align-items-center gap-3">
 
                             <span class="navbar-text text-white">
 
                                 Usuario:
+
                                 <strong>
                                     @User.Identity.Name
                                 </strong>
@@ -336,6 +424,7 @@
 
                                 @Html.AntiForgeryToken()
 
+
                                 <button type="submit"
                                         class="btn btn-outline-light btn-sm">
 
@@ -346,6 +435,7 @@
                             </form>
 
                         </div>
+
                     }
 
                 </div>
@@ -358,7 +448,7 @@
 
 
     <!-- =====================================================
-         CONTENIDO
+         CONTENIDO PRINCIPAL
          ===================================================== -->
 
     <main role="main"
@@ -402,10 +492,12 @@
             asp-append-version="true">
     </script>
 
+
     @await RenderSectionAsync(
         "Scripts",
         required: false
     )
+
 
 </body>
 

@@ -1,0 +1,357 @@
+@model IEnumerable<SIGEMIC.Models.SolicitudPago>
+
+@{
+    ViewData["Title"] = "Solicitudes de pago";
+
+    string estadoActual =
+        ViewBag.Estado as string
+        ?? "PENDIENTE";
+
+    int pendientes =
+        ViewBag.Pendientes ?? 0;
+}
+
+
+<div class="container py-4">
+
+    <!-- =====================================================
+         ENCABEZADO
+         ===================================================== -->
+
+    <div class="d-flex justify-content-between
+                align-items-center
+                flex-wrap
+                gap-3
+                mb-4">
+
+        <div>
+
+            <h2 class="fw-bold mb-1">
+                Solicitudes de pago
+            </h2>
+
+            <p class="text-muted mb-0">
+                Revisa los depósitos enviados por los clientes.
+            </p>
+
+        </div>
+
+
+        <div>
+
+            <span class="badge bg-warning text-dark fs-6">
+
+                Pendientes:
+                @pendientes
+
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         MENSAJES
+         ===================================================== -->
+
+    @if (TempData["Exito"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["Exito"]
+        </div>
+    }
+
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["Error"]
+        </div>
+    }
+
+
+    <!-- =====================================================
+         FILTROS
+         ===================================================== -->
+
+    <div class="card border-0 shadow-sm mb-4">
+
+        <div class="card-body">
+
+            <div class="d-flex flex-wrap gap-2">
+
+                <a asp-action="Index"
+                   asp-route-estado="PENDIENTE"
+                   class="btn @(estadoActual == "PENDIENTE"
+                        ? "btn-warning"
+                        : "btn-outline-warning")">
+
+                    Pendientes
+
+                </a>
+
+
+                <a asp-action="Index"
+                   asp-route-estado="APROBADA"
+                   class="btn @(estadoActual == "APROBADA"
+                        ? "btn-success"
+                        : "btn-outline-success")">
+
+                    Aprobadas
+
+                </a>
+
+
+                <a asp-action="Index"
+                   asp-route-estado="RECHAZADA"
+                   class="btn @(estadoActual == "RECHAZADA"
+                        ? "btn-danger"
+                        : "btn-outline-danger")">
+
+                    Rechazadas
+
+                </a>
+
+
+                <a asp-action="Index"
+                   asp-route-estado="TODAS"
+                   class="btn @(estadoActual == "TODAS"
+                        ? "btn-secondary"
+                        : "btn-outline-secondary")">
+
+                    Todas
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         TABLA
+         ===================================================== -->
+
+    <div class="card border-0 shadow-sm">
+
+        <div class="card-body">
+
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5">
+
+                    <h5>
+                        No hay solicitudes
+                    </h5>
+
+                    <p class="text-muted mb-0">
+
+                        No existen solicitudes para
+                        el filtro seleccionado.
+
+                    </p>
+
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Fecha
+                                </th>
+
+                                <th>
+                                    Cliente
+                                </th>
+
+                                <th>
+                                    Crédito
+                                </th>
+
+                                <th>
+                                    Tipo
+                                </th>
+
+                                <th>
+                                    Monto
+                                </th>
+
+                                <th>
+                                    Banco
+                                </th>
+
+                                <th>
+                                    Estado
+                                </th>
+
+                                <th class="text-end">
+                                    Acción
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+
+                                    <td>
+
+                                        @(item.FechaSolicitud.ToString("dd/MM/yyyy HH:mm"))
+
+                                    </td>
+
+
+                                    <td>
+
+                                        <strong>
+
+                                            @item.Cliente.Usuario.Nombres
+                                            @item.Cliente.Usuario.Apellidos
+
+                                        </strong>
+
+                                        <br />
+
+                                        <small class="text-muted">
+
+                                            @item.Cliente.CodigoCliente
+
+                                        </small>
+
+                                    </td>
+
+
+                                    <td>
+
+                                        @item.Credito.CodigoCredito
+
+                                    </td>
+
+
+                                    <td>
+
+                                        @if (
+                                            item.TipoOperacion ==
+                                            "PAGO_CUOTA"
+                                        )
+                                        {
+                                            <span>
+                                                Pago de cuota
+                                            </span>
+
+                                            @if (item.Cuota != null)
+                                            {
+                                                <br />
+
+                                                <small class="text-muted">
+
+                                                    Cuota
+                                                    #@item.Cuota.NumeroCuota
+
+                                                </small>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span>
+                                                Abono a capital
+                                            </span>
+                                        }
+
+                                    </td>
+
+
+                                    <td>
+
+                                        <strong>
+                                            Q @item.Monto.ToString("N2")
+                                        </strong>
+
+                                    </td>
+
+
+                                    <td>
+
+                                        @item.Banco.Nombre
+
+                                    </td>
+
+
+                                    <td>
+
+                                        @if (
+                                            item.Estado ==
+                                            "PENDIENTE"
+                                        )
+                                        {
+                                            <span class="badge bg-warning text-dark">
+
+                                                PENDIENTE
+
+                                            </span>
+                                        }
+                                        else if (
+                                            item.Estado ==
+                                            "APROBADA"
+                                        )
+                                        {
+                                            <span class="badge bg-success">
+
+                                                APROBADA
+
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">
+
+                                                RECHAZADA
+
+                                            </span>
+                                        }
+
+                                    </td>
+
+
+                                    <td class="text-end">
+
+                                        <a asp-action="Details"
+                                           asp-route-id="@item.IdSolicitud"
+                                           class="btn btn-primary btn-sm">
+
+                                            Ver solicitud
+
+                                        </a>
+
+                                    </td>
+
+                                </tr>
+                            }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+
+</div>

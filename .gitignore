@@ -54,3 +54,7 @@ Thumbs.db
 
 # appsettings
 appsettings.Development.json
+
+# Comprobantes bancarios enviados por clientes de SIGEMIC
+/SIGEMIC/Storage/ComprobantesPago/*
+!/SIGEMIC/Storage/ComprobantesPago/.gitkeep

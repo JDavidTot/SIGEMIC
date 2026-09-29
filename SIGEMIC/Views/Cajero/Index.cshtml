@@ -12,21 +12,42 @@
 
     decimal pagosHoy =
         ViewBag.PagosHoy ?? 0m;
+
+    int solicitudesPendientes =
+        ViewBag.SolicitudesPendientes ?? 0;
 }
+
 
 <div class="container mt-4">
 
+
+    <!-- =====================================================
+         ENCABEZADO
+         ===================================================== -->
+
     <div class="mb-4">
 
-        <h2>Dashboard Cajero</h2>
+        <h2>
+            Dashboard Cajero
+        </h2>
 
         <p class="text-muted mb-0">
+
             Operaciones principales de atención y cobro.
+
         </p>
 
     </div>
 
+
+    <!-- =====================================================
+         INDICADORES
+         ===================================================== -->
+
     <div class="row g-3 mb-4">
+
+
+        <!-- CLIENTES -->
 
         <div class="col-md-3">
 
@@ -39,7 +60,9 @@
                     </small>
 
                     <h3 class="mb-0">
+
                         @totalClientes
+
                     </h3>
 
                 </div>
@@ -48,6 +71,8 @@
 
         </div>
 
+
+        <!-- CRÉDITOS ACTIVOS -->
 
         <div class="col-md-3">
 
@@ -60,7 +85,9 @@
                     </small>
 
                     <h3 class="mb-0">
+
                         @creditosActivos
+
                     </h3>
 
                 </div>
@@ -69,6 +96,8 @@
 
         </div>
 
+
+        <!-- CUOTAS PENDIENTES -->
 
         <div class="col-md-3">
 
@@ -81,7 +110,9 @@
                     </small>
 
                     <h3 class="mb-0">
+
                         @cuotasPendientes
+
                     </h3>
 
                 </div>
@@ -90,6 +121,8 @@
 
         </div>
 
+
+        <!-- PAGOS HOY -->
 
         <div class="col-md-3">
 
@@ -102,7 +135,9 @@
                     </small>
 
                     <h3 class="mb-0">
+
                         Q @pagosHoy.ToString("N2")
+
                     </h3>
 
                 </div>
@@ -114,6 +149,88 @@
     </div>
 
 
+    <!-- =====================================================
+         SOLICITUDES PENDIENTES
+         ===================================================== -->
+
+    <div class="card shadow-sm border-warning mb-4">
+
+        <div class="card-body">
+
+            <div class="row align-items-center g-3">
+
+                <div class="col-md-8">
+
+                    <small class="text-muted">
+
+                        Solicitudes de pago pendientes
+
+                    </small>
+
+
+                    <div class="d-flex align-items-center gap-3 mt-1">
+
+                        <h2 class="mb-0">
+
+                            @solicitudesPendientes
+
+                        </h2>
+
+
+                        @if (solicitudesPendientes > 0)
+                        {
+                            <span class="badge bg-warning text-dark">
+
+                                Requieren revisión
+
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">
+
+                                Sin pendientes
+
+                            </span>
+                        }
+
+                    </div>
+
+
+                    <p class="text-muted mb-0 mt-2">
+
+                        Comprobantes enviados por clientes
+                        que todavía necesitan ser revisados.
+
+                    </p>
+
+                </div>
+
+
+                <div class="col-md-4 text-md-end">
+
+                    <a asp-controller="SolicitudesPago"
+                       asp-action="Index"
+                       asp-route-estado="PENDIENTE"
+                       class="btn btn-warning">
+
+                        Revisar solicitudes
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         OPERACIONES
+         ===================================================== -->
+
     <div class="card shadow-sm">
 
         <div class="card-header bg-white">
@@ -124,11 +241,14 @@
 
         </div>
 
+
         <div class="card-body">
 
             <div class="row g-3">
 
+
                 <!-- CLIENTES -->
+
                 <div class="col-md-4">
 
                     <div class="border rounded p-3 h-100">
@@ -138,7 +258,9 @@
                         </h5>
 
                         <p class="text-muted">
+
                             Consultar y registrar clientes.
+
                         </p>
 
                         <a asp-controller="Clientes"
@@ -155,6 +277,7 @@
 
 
                 <!-- CRÉDITOS -->
+
                 <div class="col-md-4">
 
                     <div class="border rounded p-3 h-100">
@@ -164,7 +287,10 @@
                         </h5>
 
                         <p class="text-muted">
-                            Consultar créditos y tablas de amortización.
+
+                            Consultar créditos y tablas
+                            de amortización.
+
                         </p>
 
                         <a asp-controller="Creditos"
@@ -181,6 +307,7 @@
 
 
                 <!-- REGISTRAR PAGO -->
+
                 <div class="col-md-4">
 
                     <div class="border rounded p-3 h-100">
@@ -190,7 +317,10 @@
                         </h5>
 
                         <p class="text-muted">
-                            Cobrar cuotas o registrar abonos a capital.
+
+                            Cobrar cuotas o registrar
+                            abonos a capital.
+
                         </p>
 
                         <a asp-controller="Pagos"
@@ -206,7 +336,57 @@
                 </div>
 
 
+                <!-- SOLICITUDES -->
+
+                <div class="col-md-4">
+
+                    <div class="border rounded p-3 h-100">
+
+                        <div class="d-flex justify-content-between
+                                    align-items-start
+                                    gap-2">
+
+                            <h5>
+                                Solicitudes de pago
+                            </h5>
+
+
+                            @if (solicitudesPendientes > 0)
+                            {
+                                <span class="badge bg-warning text-dark">
+
+                                    @solicitudesPendientes
+
+                                </span>
+                            }
+
+                        </div>
+
+
+                        <p class="text-muted">
+
+                            Revisar comprobantes enviados
+                            por los clientes.
+
+                        </p>
+
+
+                        <a asp-controller="SolicitudesPago"
+                           asp-action="Index"
+                           asp-route-estado="PENDIENTE"
+                           class="btn btn-outline-warning">
+
+                            Revisar solicitudes
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+
                 <!-- HISTORIAL -->
+
                 <div class="col-md-4">
 
                     <div class="border rounded p-3 h-100">
@@ -216,7 +396,10 @@
                         </h5>
 
                         <p class="text-muted">
-                            Consultar recibos, pagos y abonos registrados.
+
+                            Consultar recibos, pagos
+                            y abonos registrados.
+
                         </p>
 
                         <a asp-controller="Pagos"
