@@ -2,15 +2,64 @@
 
 @{
     ViewData["Title"] = "Cuotas del cliente";
+
+    var cuotas =
+        Model?.ToList()
+        ?? new List<SIGEMIC.Models.Cuota>();
+
+    var tieneCuotas =
+        cuotas.Any();
+
+    SIGEMIC.Models.Credito? primerCredito =
+        tieneCuotas
+            ? cuotas.First().Credito
+            : null;
+
+    var hayCuotaIrregular =
+        primerCredito != null &&
+        cuotas.Any(c =>
+            c.IdCredito == primerCredito.IdCredito &&
+            (
+                c.Estado == "PARCIAL" ||
+                c.Estado == "ATRASADA"
+            )
+        );
+
+    var cuotaIrregular =
+        primerCredito != null
+            ? cuotas
+                .Where(c =>
+                    c.IdCredito == primerCredito.IdCredito &&
+                    (
+                        c.Estado == "PARCIAL" ||
+                        c.Estado == "ATRASADA"
+                    )
+                )
+                .OrderBy(c => c.NumeroCuota)
+                .FirstOrDefault()
+            : null;
 }
+
 
 <div class="container mt-4">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
+
+    <!-- =====================================================
+         ENCABEZADO
+         ===================================================== -->
+
+    <div class="d-flex justify-content-between
+                align-items-center
+                flex-wrap
+                gap-3
+                mb-4">
 
         <div>
 
-            <h2>Cuotas pendientes</h2>
+            <h2>
+                Cuotas pendientes
+            </h2>
+
 
             <p class="text-muted mb-0">
 
@@ -25,134 +74,343 @@
 
         </div>
 
-                <div class="d-flex gap-2">
 
-                    @if (Model != null && Model.Any())
-                    {
-                        var primerCredito = Model.First().Credito;
+        <!-- =================================================
+             BOTONES SUPERIORES
+             ================================================= -->
 
-                        <a asp-controller="Pagos"
-                        asp-action="AbonoExtraordinario"
-                        asp-route-id="@primerCredito.IdCredito"
-                        class="btn btn-success">
+        <div class="d-flex gap-2">
 
-                            Abono a capital
 
-                        </a>
-                    }
-
+            @if (primerCredito != null)
+            {
+                @if (!hayCuotaIrregular)
+                {
                     <a asp-controller="Pagos"
-                    asp-action="Index"
-                    class="btn btn-secondary">
+                       asp-action="AbonoExtraordinario"
+                       asp-route-id="@primerCredito.IdCredito"
+                       class="btn btn-success">
 
-                        Cambiar cliente
+                        Abono a capital
 
                     </a>
+                }
+                else
+                {
+                    <button type="button"
+                            class="btn btn-success"
+                            disabled
+                            title="Primero debe completar las cuotas parciales o atrasadas.">
 
-                </div>
+                        Abono a capital
+
+                    </button>
+                }
+            }
+
+
+            <a asp-controller="Pagos"
+               asp-action="Index"
+               class="btn btn-secondary">
+
+                Cambiar cliente
+
+            </a>
+
+        </div>
 
     </div>
 
 
+    <!-- =====================================================
+         MENSAJE DE ÉXITO
+         ===================================================== -->
+
     @if (TempData["MensajeExito"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show">
+        <div class="alert alert-success
+                    alert-dismissible
+                    fade show"
+             role="alert">
 
             @TempData["MensajeExito"]
 
+
             <button type="button"
                     class="btn-close"
-                    data-bs-dismiss="alert">
+                    data-bs-dismiss="alert"
+                    aria-label="Cerrar">
             </button>
 
         </div>
     }
 
 
+    <!-- =====================================================
+         MENSAJE DE ERROR
+         ===================================================== -->
+
+    @if (TempData["MensajeError"] != null)
+    {
+        <div class="alert alert-danger
+                    alert-dismissible
+                    fade show"
+             role="alert">
+
+            @TempData["MensajeError"]
+
+
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Cerrar">
+            </button>
+
+        </div>
+    }
+
+
+    <!-- =====================================================
+         AVISO DE ABONO BLOQUEADO
+         ===================================================== -->
+
+    @if (hayCuotaIrregular && cuotaIrregular != null)
+    {
+        <div class="alert alert-warning">
+
+            <strong>
+                Abono a capital no disponible.
+            </strong>
+
+            <div class="mt-1">
+
+                Primero debes completar la cuota
+                <strong>
+                    #@cuotaIrregular.NumeroCuota
+                </strong>
+
+                que actualmente se encuentra en estado
+
+                <strong>
+                    @cuotaIrregular.Estado
+                </strong>.
+
+            </div>
+
+
+            <div class="mt-2">
+
+                Saldo pendiente de esa cuota:
+
+                <strong>
+                    Q @cuotaIrregular.SaldoCuota.ToString("N2")
+                </strong>
+
+            </div>
+
+        </div>
+    }
+
+
+    <!-- =====================================================
+         TABLA DE CUOTAS
+         ===================================================== -->
+
     <div class="card shadow-sm">
 
         <div class="card-body">
 
-            @if (Model != null && Model.Any())
+
+            @if (tieneCuotas)
             {
                 <div class="table-responsive">
 
-                    <table class="table table-hover align-middle">
+                    <table class="table
+                                  table-hover
+                                  align-middle">
+
+
+                        <!-- =============================
+                             ENCABEZADOS
+                             ============================= -->
 
                         <thead>
 
                             <tr>
-                                <th>Crédito</th>
-                                <th>Cuota</th>
-                                <th>Vencimiento</th>
-                                <th>Capital</th>
-                                <th>Interés</th>
-                                <th>Saldo</th>
-                                <th>Estado</th>
-                                <th></th>
+
+                                <th>
+                                    Crédito
+                                </th>
+
+                                <th>
+                                    Cuota
+                                </th>
+
+                                <th>
+                                    Vencimiento
+                                </th>
+
+                                <th>
+                                    Capital
+                                </th>
+
+                                <th>
+                                    Interés
+                                </th>
+
+                                <th>
+                                    Saldo
+                                </th>
+
+                                <th>
+                                    Estado
+                                </th>
+
+                                <th>
+                                </th>
+
                             </tr>
 
                         </thead>
 
+
+                        <!-- =============================
+                             CUOTAS
+                             ============================= -->
+
                         <tbody>
 
-                            @foreach (var cuota in Model)
+
+                            @foreach (var cuota in cuotas)
                             {
                                 <tr>
 
+
+                                    <!-- CRÉDITO -->
+
                                     <td>
+
                                         @cuota.Credito.CodigoCredito
+
                                     </td>
 
+
+                                    <!-- NÚMERO DE CUOTA -->
+
                                     <td>
+
                                         #@cuota.NumeroCuota
+
                                     </td>
 
-                                    <td>
-                                        @cuota.FechaVencimiento.ToString("dd/MM/yyyy")
-                                    </td>
+
+                                    <!-- FECHA -->
 
                                     <td>
-                                        Q @((cuota.CapitalProgramado - cuota.CapitalPagado).ToString("N2"))
+
+                                        @(cuota.FechaVencimiento.ToString("dd/MM/yyyy"))
+
                                     </td>
 
-                                    <td>
-                                        Q @((cuota.InteresProgramado - cuota.InteresPagado).ToString("N2"))
-                                    </td>
+
+                                    <!-- CAPITAL PENDIENTE -->
 
                                     <td>
+
+                                        Q @(
+                                            (
+                                                cuota.CapitalProgramado -
+                                                cuota.CapitalPagado
+                                            )
+                                            .ToString("N2")
+                                        )
+
+                                    </td>
+
+
+                                    <!-- INTERÉS PENDIENTE -->
+
+                                    <td>
+
+                                        Q @(
+                                            (
+                                                cuota.InteresProgramado -
+                                                cuota.InteresPagado
+                                            )
+                                            .ToString("N2")
+                                        )
+
+                                    </td>
+
+
+                                    <!-- SALDO -->
+
+                                    <td>
+
                                         <strong>
-                                            Q @cuota.SaldoCuota.ToString("N2")
+
+                                            Q @(cuota.SaldoCuota.ToString("N2"))
+
                                         </strong>
+
                                     </td>
 
+
+                                    <!-- ESTADO -->
+
                                     <td>
+
                                         @if (cuota.Estado == "ATRASADA")
                                         {
                                             <span class="badge bg-danger">
+
                                                 ATRASADA
+
                                             </span>
                                         }
+
                                         else if (cuota.Estado == "PARCIAL")
                                         {
-                                            <span class="badge bg-warning text-dark">
+                                            <span class="badge
+                                                         bg-warning
+                                                         text-dark">
+
                                                 PARCIAL
+
                                             </span>
                                         }
+
+                                        else if (cuota.Estado == "PENDIENTE")
+                                        {
+                                            <span class="badge bg-secondary">
+
+                                                PENDIENTE
+
+                                            </span>
+                                        }
+
                                         else
                                         {
                                             <span class="badge bg-secondary">
-                                                PENDIENTE
+
+                                                @cuota.Estado
+
                                             </span>
                                         }
+
                                     </td>
+
+
+                                    <!-- ACCIÓN -->
 
                                     <td class="text-end">
 
                                         <a asp-controller="Pagos"
-                                        asp-action="Registrar"
-                                        asp-route-id="@cuota.IdCuota"
-                                        class="btn btn-primary btn-sm">
+                                           asp-action="Registrar"
+                                           asp-route-id="@cuota.IdCuota"
+                                           class="btn
+                                                  btn-primary
+                                                  btn-sm">
 
                                             Registrar pago
 
@@ -169,6 +427,7 @@
 
                 </div>
             }
+
             else
             {
                 <div class="alert alert-success mb-0">
