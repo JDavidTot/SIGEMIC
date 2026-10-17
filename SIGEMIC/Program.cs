@@ -89,6 +89,7 @@ builder.Services
 builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<PagoService>();
+builder.Services.AddScoped<PermisoService>();
 
 
 

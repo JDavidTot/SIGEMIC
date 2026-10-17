@@ -22,6 +22,8 @@ namespace SIGEMIC.Data
         public DbSet<Auditoria> Auditorias { get; set; }
         public DbSet<Banco> Bancos { get; set; }
         public DbSet<SolicitudPago> SolicitudesPago { get; set; }
+        public DbSet<Permiso> Permisos { get; set; }
+        public DbSet<UsuarioPermiso> UsuarioPermisos { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -93,6 +95,47 @@ namespace SIGEMIC.Data
                     .HasForeignKey<SolicitudPago>(e => e.IdPago)
                     .OnDelete(DeleteBehavior.Restrict);
             });
+
+                        modelBuilder.Entity<Permiso>(entity =>
+                {
+                    entity.ToTable("permisos");
+                    entity.HasKey(e => e.IdPermiso);
+
+                    entity.HasIndex(e => e.Codigo)
+                        .IsUnique();
+
+                    entity.Property(e => e.Estado)
+                        .HasColumnType("enum('ACTIVO','INACTIVO')")
+                        .HasDefaultValue("ACTIVO");
+
+                    entity.Property(e => e.FechaCreacion)
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                });
+
+                modelBuilder.Entity<UsuarioPermiso>(entity =>
+                {
+                    entity.ToTable("usuario_permisos");
+
+                    entity.HasKey(e => new
+                    {
+                        e.IdUsuario,
+                        e.IdPermiso
+                    });
+
+                    entity.Property(e => e.FechaAsignacion)
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    entity.HasOne(e => e.Usuario)
+                        .WithMany()
+                        .HasForeignKey(e => e.IdUsuario)
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    entity.HasOne(e => e.Permiso)
+                        .WithMany()
+                        .HasForeignKey(e => e.IdPermiso)
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
         }
     }
 }

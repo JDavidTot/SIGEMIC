@@ -1,7 +1,9 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SIGEMIC.Data;
+using SIGEMIC.Services;
 
 namespace SIGEMIC.Controllers
 {
@@ -9,77 +11,76 @@ namespace SIGEMIC.Controllers
     public class CajeroController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly PermisoService _permisoService;
 
-        public CajeroController(ApplicationDbContext context)
+        public CajeroController(
+            ApplicationDbContext context,
+            PermisoService permisoService)
         {
             _context = context;
+            _permisoService = permisoService;
         }
-
-
-        // =====================================================
-        // DASHBOARD CAJERO
-        // =====================================================
 
         public async Task<IActionResult> Index()
         {
-            // =================================================
-            // CLIENTES
-            // =================================================
+            var idTexto = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            ViewBag.TotalClientes =
-                await _context.Clientes
-                    .CountAsync();
+            if (!uint.TryParse(idTexto, out uint idUsuario))
+                return Unauthorized();
 
+            var permisos = (await _permisoService
+                .ObtenerPermisosAsync(idUsuario))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            // =================================================
-            // CRÉDITOS ACTIVOS
-            // =================================================
+            ViewData["PermisosCajero"] = permisos.ToList();
 
-            ViewBag.CreditosActivos =
-                await _context.Creditos
-                    .CountAsync(c =>
-                        c.Estado == "ACTIVO"
-                    );
+            ViewBag.TotalClientes = 0;
+            ViewBag.CreditosActivos = 0;
+            ViewBag.CuotasPendientes = 0;
+            ViewBag.PagosHoy = 0m;
+            ViewBag.SolicitudesPendientes = 0;
 
+            if (permisos.Contains("CLIENTES_VER"))
+            {
+                ViewBag.TotalClientes =
+                    await _context.Clientes.CountAsync();
+            }
 
-            // =================================================
-            // CUOTAS PENDIENTES O ATRASADAS
-            // =================================================
+            if (permisos.Contains("CREDITOS_VER"))
+            {
+                ViewBag.CreditosActivos =
+                    await _context.Creditos
+                        .CountAsync(c =>
+                            c.Estado == "ACTIVO");
+            }
 
-            ViewBag.CuotasPendientes =
-                await _context.Cuotas
-                    .CountAsync(c =>
-                        c.Estado == "PENDIENTE" ||
-                        c.Estado == "ATRASADA"
-                    );
+            if (permisos.Contains("PAGOS_REGISTRAR"))
+            {
+                ViewBag.CuotasPendientes =
+                    await _context.Cuotas
+                        .CountAsync(c =>
+                            c.Estado == "PENDIENTE" ||
+                            c.Estado == "ATRASADA");
+            }
 
+            if (permisos.Contains("PAGOS_HISTORIAL"))
+            {
+                ViewBag.PagosHoy =
+                    await _context.Pagos
+                        .Where(p =>
+                            p.FechaPago.Date == DateTime.Today)
+                        .SumAsync(p =>
+                            (decimal?)p.MontoTotal)
+                    ?? 0m;
+            }
 
-            // =================================================
-            // PAGOS DE HOY
-            // =================================================
-
-            ViewBag.PagosHoy =
-                await _context.Pagos
-                    .Where(p =>
-                        p.FechaPago.Date ==
-                        DateTime.Today
-                    )
-                    .SumAsync(p =>
-                        (decimal?)p.MontoTotal
-                    )
-                ?? 0m;
-
-
-            // =================================================
-            // SOLICITUDES DE PAGO PENDIENTES
-            // =================================================
-
-            ViewBag.SolicitudesPendientes =
-                await _context.SolicitudesPago
-                    .CountAsync(s =>
-                        s.Estado == "PENDIENTE"
-                    );
-
+            if (permisos.Contains("SOLICITUDES_VER"))
+            {
+                ViewBag.SolicitudesPendientes =
+                    await _context.SolicitudesPago
+                        .CountAsync(s =>
+                            s.Estado == "PENDIENTE");
+            }
 
             return View();
         }

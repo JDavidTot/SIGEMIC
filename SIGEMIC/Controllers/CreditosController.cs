@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using SIGEMIC.Data;
 using SIGEMIC.Models;
+using SIGEMIC.Security;
 
 namespace SIGEMIC.Controllers
 {
@@ -17,8 +18,7 @@ namespace SIGEMIC.Controllers
             _context = context;
         }
 
-
-
+        [PermisoAuthorize("CREDITOS_VER")]
         public async Task<IActionResult> Index()
         {
             var creditos = await _context.Creditos
@@ -32,9 +32,8 @@ namespace SIGEMIC.Controllers
             return View(creditos);
         }
 
-  
-
         [HttpGet]
+        [PermisoAuthorize("CREDITOS_DETALLE")]
         public async Task<IActionResult> Details(ulong id)
         {
             var credito = await _context.Creditos
@@ -42,18 +41,16 @@ namespace SIGEMIC.Controllers
                     .ThenInclude(c => c.Usuario)
                 .Include(c => c.PlanCredito)
                 .Include(c => c.Cuotas)
-                .FirstOrDefaultAsync(c =>
-                    c.IdCredito == id);
+                .FirstOrDefaultAsync(c => c.IdCredito == id);
 
             if (credito == null)
-            {
                 return NotFound();
-            }
 
             return View(credito);
         }
 
         [HttpGet]
+        [PermisoAuthorize("CREDITOS_CREAR")]
         public async Task<IActionResult> Create()
         {
             var model = new CrearCreditoViewModel();
@@ -63,22 +60,16 @@ namespace SIGEMIC.Controllers
             return View(model);
         }
 
-  
-
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(
-            CrearCreditoViewModel model)
+        [PermisoAuthorize("CREDITOS_CREAR")]
+        public async Task<IActionResult> Create(CrearCreditoViewModel model)
         {
-
-
             if (!ModelState.IsValid)
             {
                 await CargarCombos(model);
-
                 return View(model);
             }
-
 
             var cliente = await _context.Clientes
                 .FirstOrDefaultAsync(c =>
@@ -93,10 +84,8 @@ namespace SIGEMIC.Controllers
                 );
 
                 await CargarCombos(model);
-
                 return View(model);
             }
-
 
             var plan = await _context.PlanesCredito
                 .FirstOrDefaultAsync(p =>
@@ -111,10 +100,8 @@ namespace SIGEMIC.Controllers
                 );
 
                 await CargarCombos(model);
-
                 return View(model);
             }
-
 
             uint[] plazosPermitidos =
             {
@@ -129,10 +116,8 @@ namespace SIGEMIC.Controllers
                 );
 
                 await CargarCombos(model);
-
                 return View(model);
             }
-
 
             decimal tasaMensual;
 
@@ -146,7 +131,6 @@ namespace SIGEMIC.Controllers
                 tasaMensual =
                     plan.PorcentajeInteres / 100m;
             }
-
 
             double monto =
                 Convert.ToDouble(model.MontoOriginal);
@@ -183,15 +167,12 @@ namespace SIGEMIC.Controllers
                     2
                 );
 
-
             await using var transaction =
                 await _context.Database
                     .BeginTransactionAsync();
 
             try
             {
-
-
                 var credito = new Credito
                 {
                     CodigoCredito =
@@ -243,12 +224,10 @@ namespace SIGEMIC.Controllers
 
                 await _context.SaveChangesAsync();
 
-                // Ahora ya tenemos el ID.
                 credito.CodigoCredito =
                     $"CR-{credito.IdCredito:D6}";
 
                 await _context.SaveChangesAsync();
-
 
                 decimal saldoRestante =
                     credito.MontoOriginal;
@@ -259,7 +238,6 @@ namespace SIGEMIC.Controllers
                     numero++
                 )
                 {
-                    // Interés del período
                     decimal interesMes =
                         Math.Round(
                             saldoRestante *
@@ -267,7 +245,6 @@ namespace SIGEMIC.Controllers
                             2
                         );
 
-                    // Capital del período
                     decimal capitalMes =
                         Math.Round(
                             credito.CuotaOriginal -
@@ -275,7 +252,6 @@ namespace SIGEMIC.Controllers
                             2
                         );
 
-                    // Ajuste de la última cuota
                     if (numero == meses)
                     {
                         capitalMes =
@@ -371,12 +347,9 @@ namespace SIGEMIC.Controllers
             }
         }
 
-
         private async Task CargarCombos(
             CrearCreditoViewModel model)
         {
-          
-
             model.Clientes = await _context.Clientes
                 .Include(c => c.Usuario)
                 .Where(c =>
@@ -399,7 +372,6 @@ namespace SIGEMIC.Controllers
                             c.Usuario.Apellidos
                     })
                 .ToListAsync();
-
 
             model.Planes = await _context.PlanesCredito
                 .Where(p =>

@@ -7,13 +7,11 @@
 <div class="container mt-4">
 
     <div class="mb-4">
-
         <h2>Registrar pago</h2>
 
         <p class="text-muted">
             Puede registrar el pago completo o parcial de la cuota.
         </p>
-
     </div>
 
     <div class="card shadow-sm">
@@ -22,6 +20,8 @@
 
             <form asp-action="Registrar"
                   method="post">
+
+                @Html.AntiForgeryToken()
 
                 <input asp-for="IdCuota"
                        type="hidden" />
@@ -225,18 +225,13 @@
 
                     <button type="submit"
                             class="btn btn-success">
-
                         Registrar pago
-
                     </button>
 
                     <a asp-controller="Pagos"
-                       asp-action="CuotasCliente"
-                       asp-route-id="@ViewBag.IdCliente"
+                       asp-action="Index"
                        class="btn btn-secondary">
-
                         Cancelar
-
                     </a>
 
                 </div>
@@ -244,7 +239,6 @@
             </form>
 
         </div>
-
     </div>
 
 </div>

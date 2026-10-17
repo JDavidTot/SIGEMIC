@@ -1,31 +1,39 @@
 @model SIGEMIC.Models.Credito
+@using System.Security.Claims
+@inject SIGEMIC.Services.PermisoService PermisoService
 
 @{
     ViewData["Title"] = "Detalle del crédito";
 
     var totalPagado = Model.Cuotas
-        .Sum(c =>
-            c.CapitalPagado +
-            c.InteresPagado +
-            c.MoraPagada);
+        .Sum(c => c.CapitalPagado + c.InteresPagado + c.MoraPagada);
 
     var cuotasPagadas = Model.Cuotas
         .Count(c => c.Estado == "PAGADA");
 
     var cuotasPendientes = Model.Cuotas
         .Count(c => c.Estado != "PAGADA");
+
+    bool puedeVerListado = User.IsInRole("ADMINISTRADOR");
+
+    if (User.IsInRole("CAJERO"))
+    {
+        var idTexto = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (uint.TryParse(idTexto, out uint idUsuario))
+        {
+            puedeVerListado = await PermisoService.TienePermisoAsync(
+                idUsuario,
+                "CREDITOS_VER"
+            );
+        }
+    }
 }
 
 <div class="container mt-4">
 
-    <!-- =====================================================
-         ENCABEZADO
-         ===================================================== -->
-
     <div class="d-flex justify-content-between align-items-center mb-4">
-
         <div>
-
             <h2>Detalle del crédito</h2>
 
             <p class="text-muted mb-0">
@@ -34,31 +42,30 @@
                 @Model.Cliente.Usuario.Nombres
                 @Model.Cliente.Usuario.Apellidos
             </p>
-
         </div>
 
-        <a asp-action="Index"
-           class="btn btn-secondary">
-
-            Volver
-
-        </a>
-
+        @if (puedeVerListado)
+        {
+            <a asp-action="Index"
+               class="btn btn-secondary">
+                Volver
+            </a>
+        }
+        else if (User.IsInRole("CAJERO"))
+        {
+            <a asp-controller="Cajero"
+               asp-action="Index"
+               class="btn btn-secondary">
+                Volver al dashboard
+            </a>
+        }
     </div>
-
-
-    <!-- =====================================================
-         INFORMACIÓN GENERAL
-         ===================================================== -->
 
     <div class="row g-3 mb-4">
 
         <div class="col-md-3">
-
             <div class="card shadow-sm h-100">
-
                 <div class="card-body">
-
                     <small class="text-muted">
                         Monto original
                     </small>
@@ -66,20 +73,13 @@
                     <h4 class="mb-0">
                         Q @Model.MontoOriginal.ToString("N2")
                     </h4>
-
                 </div>
-
             </div>
-
         </div>
 
-
         <div class="col-md-3">
-
             <div class="card shadow-sm h-100">
-
                 <div class="card-body">
-
                     <small class="text-muted">
                         Saldo de capital
                     </small>
@@ -87,20 +87,13 @@
                     <h4 class="mb-0">
                         Q @Model.SaldoCapital.ToString("N2")
                     </h4>
-
                 </div>
-
             </div>
-
         </div>
 
-
         <div class="col-md-3">
-
             <div class="card shadow-sm h-100">
-
                 <div class="card-body">
-
                     <small class="text-muted">
                         Cuota original
                     </small>
@@ -108,26 +101,18 @@
                     <h4 class="mb-0">
                         Q @Model.CuotaOriginal.ToString("N2")
                     </h4>
-
                 </div>
-
             </div>
-
         </div>
 
-
         <div class="col-md-3">
-
             <div class="card shadow-sm h-100">
-
                 <div class="card-body">
-
                     <small class="text-muted">
                         Estado
                     </small>
 
                     <div class="mt-1">
-
                         @if (Model.Estado == "ACTIVO")
                         {
                             <span class="badge bg-success fs-6">
@@ -152,38 +137,24 @@
                                 @Model.Estado
                             </span>
                         }
-
                     </div>
-
                 </div>
-
             </div>
-
         </div>
 
     </div>
 
-
-    <!-- =====================================================
-         DATOS DEL CRÉDITO
-         ===================================================== -->
-
     <div class="card shadow-sm mb-4">
-
         <div class="card-header bg-white">
-
             <h5 class="mb-0">
                 Información del crédito
             </h5>
-
         </div>
 
         <div class="card-body">
-
             <div class="row">
 
                 <div class="col-md-6">
-
                     <dl class="row mb-0">
 
                         <dt class="col-sm-5">
@@ -196,7 +167,6 @@
                             @Model.Cliente.Usuario.Apellidos
                         </dd>
 
-
                         <dt class="col-sm-5">
                             Plan
                         </dt>
@@ -204,7 +174,6 @@
                         <dd class="col-sm-7">
                             @Model.PlanCredito.Nombre
                         </dd>
-
 
                         <dt class="col-sm-5">
                             Tipo de tasa
@@ -214,7 +183,6 @@
                             @Model.TipoTasaAplicada
                         </dd>
 
-
                         <dt class="col-sm-5">
                             Tasa aplicada
                         </dt>
@@ -222,7 +190,6 @@
                         <dd class="col-sm-7">
                             @Model.PorcentajeInteresAplicado.ToString("N4") %
                         </dd>
-
 
                         <dt class="col-sm-5">
                             Plazo original
@@ -233,12 +200,9 @@
                         </dd>
 
                     </dl>
-
                 </div>
 
-
                 <div class="col-md-6">
-
                     <dl class="row mb-0">
 
                         <dt class="col-sm-6">
@@ -249,7 +213,6 @@
                             @Model.FechaOtorgamiento.ToString("dd/MM/yyyy")
                         </dd>
 
-
                         <dt class="col-sm-6">
                             Fecha inicio
                         </dt>
@@ -257,7 +220,6 @@
                         <dd class="col-sm-6">
                             @Model.FechaInicio.ToString("dd/MM/yyyy")
                         </dd>
-
 
                         <dt class="col-sm-6">
                             Finalización estimada
@@ -267,7 +229,6 @@
                             @Model.FechaFinalizacionEstimada.ToString("dd/MM/yyyy")
                         </dd>
 
-
                         <dt class="col-sm-6">
                             Cuotas pagadas
                         </dt>
@@ -275,7 +236,6 @@
                         <dd class="col-sm-6">
                             @cuotasPagadas
                         </dd>
-
 
                         <dt class="col-sm-6">
                             Cuotas pendientes
@@ -286,28 +246,17 @@
                         </dd>
 
                     </dl>
-
                 </div>
 
             </div>
-
         </div>
-
     </div>
-
-
-    <!-- =====================================================
-         RESUMEN DE PAGOS
-         ===================================================== -->
 
     <div class="row g-3 mb-4">
 
         <div class="col-md-4">
-
             <div class="card shadow-sm">
-
                 <div class="card-body">
-
                     <small class="text-muted">
                         Total pagado en cuotas
                     </small>
@@ -315,20 +264,13 @@
                     <h4>
                         Q @totalPagado.ToString("N2")
                     </h4>
-
                 </div>
-
             </div>
-
         </div>
 
-
         <div class="col-md-4">
-
             <div class="card shadow-sm">
-
                 <div class="card-body">
-
                     <small class="text-muted">
                         Cuotas pagadas
                     </small>
@@ -336,20 +278,13 @@
                     <h4>
                         @cuotasPagadas
                     </h4>
-
                 </div>
-
             </div>
-
         </div>
 
-
         <div class="col-md-4">
-
             <div class="card shadow-sm">
-
                 <div class="card-body">
-
                     <small class="text-muted">
                         Cuotas pendientes
                     </small>
@@ -357,41 +292,27 @@
                     <h4>
                         @cuotasPendientes
                     </h4>
-
                 </div>
-
             </div>
-
         </div>
 
     </div>
 
-
-    <!-- =====================================================
-         TABLA DE AMORTIZACIÓN
-         ===================================================== -->
-
     <div class="card shadow-sm">
-
         <div class="card-header bg-white">
-
             <h5 class="mb-0">
                 Tabla de amortización
             </h5>
-
         </div>
 
         <div class="card-body">
 
-            @if (Model.Cuotas != null &&
-                 Model.Cuotas.Any())
+            @if (Model.Cuotas != null && Model.Cuotas.Any())
             {
                 <div class="table-responsive">
-
                     <table class="table table-hover align-middle">
 
                         <thead>
-
                             <tr>
                                 <th>No.</th>
                                 <th>Vencimiento</th>
@@ -403,18 +324,13 @@
                                 <th>Saldo cuota</th>
                                 <th>Estado</th>
                             </tr>
-
                         </thead>
 
                         <tbody>
 
-                            @foreach (var cuota in
-                                Model.Cuotas
-                                    .OrderBy(c =>
-                                        c.NumeroCuota))
+                            @foreach (var cuota in Model.Cuotas.OrderBy(c => c.NumeroCuota))
                             {
                                 <tr>
-
                                     <td>
                                         @cuota.NumeroCuota
                                     </td>
@@ -450,7 +366,6 @@
                                     </td>
 
                                     <td>
-
                                         @if (cuota.Estado == "PAGADA")
                                         {
                                             <span class="badge bg-success">
@@ -475,29 +390,22 @@
                                                 PENDIENTE
                                             </span>
                                         }
-
                                     </td>
-
                                 </tr>
                             }
 
                         </tbody>
-
                     </table>
-
                 </div>
             }
             else
             {
                 <div class="alert alert-info mb-0">
-
                     Este crédito no tiene cuotas registradas.
-
                 </div>
             }
 
         </div>
-
     </div>
 
 </div>

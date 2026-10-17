@@ -1,0 +1,369 @@
+@model SIGEMIC.ViewModels.PermisosCajeroViewModel
+
+@{
+    ViewData["Title"] = "Permisos del cajero";
+
+    var modulos = Model.Permisos
+        .GroupBy(p => p.Modulo)
+        .ToList();
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between
+                align-items-start
+                flex-wrap
+                gap-3
+                mb-4">
+
+        <div>
+            <h2 class="mb-1">
+                Permisos del cajero
+            </h2>
+
+            <p class="mb-1">
+                <strong>
+                    @Model.NombreCompleto
+                </strong>
+            </p>
+
+            <p class="text-muted mb-0">
+                Usuario:
+                <strong>
+                    @Model.Username
+                </strong>
+            </p>
+        </div>
+
+        <a asp-action="Index"
+           class="btn btn-outline-secondary">
+            Volver
+        </a>
+
+    </div>
+
+    <div class="alert alert-info">
+        Selecciona las funciones a las que tendrá acceso este cajero.
+        Algunos permisos requieren automáticamente un permiso principal.
+    </div>
+
+    <div class="alert alert-light border">
+        <strong>Dependencias automáticas:</strong>
+
+        <div class="small mt-2">
+            Crear, editar o cambiar estado de clientes
+            requiere <strong>Ver clientes</strong>.
+        </div>
+
+        <div class="small">
+            Crear o ver detalle de créditos
+            requiere <strong>Ver créditos</strong>.
+        </div>
+
+        <div class="small">
+            Abono a capital
+            requiere <strong>Registrar pagos</strong>.
+        </div>
+
+        <div class="small">
+            Aprobar o rechazar solicitudes
+            requiere <strong>Ver solicitudes</strong>.
+        </div>
+    </div>
+
+    <form asp-action="Permisos"
+          method="post"
+          id="formPermisos">
+
+        @Html.AntiForgeryToken()
+
+        <input type="hidden"
+               asp-for="IdUsuario" />
+
+        <input type="hidden"
+               asp-for="NombreCompleto" />
+
+        <input type="hidden"
+               asp-for="Username" />
+
+        @for (
+            int i = 0;
+            i < Model.Permisos.Count;
+            i++)
+        {
+            <input type="hidden"
+                   asp-for="Permisos[i].IdPermiso" />
+
+            <input type="hidden"
+                   asp-for="Permisos[i].Codigo" />
+
+            <input type="hidden"
+                   asp-for="Permisos[i].Nombre" />
+
+            <input type="hidden"
+                   asp-for="Permisos[i].Descripcion" />
+
+            <input type="hidden"
+                   asp-for="Permisos[i].Modulo" />
+        }
+
+        @foreach (var grupo in modulos)
+        {
+            <div class="card shadow-sm mb-3">
+
+                <div class="card-header bg-light">
+                    <strong>
+                        @grupo.Key
+                    </strong>
+                </div>
+
+                <div class="card-body">
+
+                    @foreach (var permiso in grupo)
+                    {
+                        var indice =
+                            Model.Permisos.IndexOf(
+                                permiso
+                            );
+
+                        <div class="form-check mb-3">
+
+                            <input asp-for="Permisos[indice].Seleccionado"
+                                   class="form-check-input permiso-checkbox"
+                                   data-codigo="@permiso.Codigo" />
+
+                            <label asp-for="Permisos[indice].Seleccionado"
+                                   class="form-check-label">
+
+                                <strong>
+                                    @permiso.Nombre
+                                </strong>
+
+                                @if (
+                                    !string.IsNullOrWhiteSpace(
+                                        permiso.Descripcion
+                                    )
+                                )
+                                {
+                                    <br />
+
+                                    <small class="text-muted">
+                                        @permiso.Descripcion
+                                    </small>
+                                }
+
+                                @if (
+                                    permiso.Codigo ==
+                                    "CLIENTES_CREAR" ||
+                                    permiso.Codigo ==
+                                    "CLIENTES_EDITAR" ||
+                                    permiso.Codigo ==
+                                    "CLIENTES_CAMBIAR_ESTADO")
+                                {
+                                    <br />
+
+                                    <small class="text-primary">
+                                        Requiere Ver clientes.
+                                    </small>
+                                }
+
+                                @if (
+                                    permiso.Codigo ==
+                                    "CREDITOS_CREAR" ||
+                                    permiso.Codigo ==
+                                    "CREDITOS_DETALLE")
+                                {
+                                    <br />
+
+                                    <small class="text-primary">
+                                        Requiere Ver créditos.
+                                    </small>
+                                }
+
+                                @if (
+                                    permiso.Codigo ==
+                                    "PAGOS_ABONO_CAPITAL")
+                                {
+                                    <br />
+
+                                    <small class="text-primary">
+                                        Requiere Registrar pagos.
+                                    </small>
+                                }
+
+                                @if (
+                                    permiso.Codigo ==
+                                    "SOLICITUDES_APROBAR" ||
+                                    permiso.Codigo ==
+                                    "SOLICITUDES_RECHAZAR")
+                                {
+                                    <br />
+
+                                    <small class="text-primary">
+                                        Requiere Ver solicitudes.
+                                    </small>
+                                }
+
+                            </label>
+
+                        </div>
+                    }
+
+                </div>
+
+            </div>
+        }
+
+        @if (!Model.Permisos.Any())
+        {
+            <div class="alert alert-warning">
+                No existen permisos activos registrados.
+            </div>
+        }
+
+        <div class="d-flex gap-2 mt-4">
+
+            <button type="submit"
+                    class="btn btn-primary">
+                Guardar permisos
+            </button>
+
+            <a asp-action="Edit"
+               asp-route-id="@Model.IdUsuario"
+               class="btn btn-outline-secondary">
+                Editar cajero
+            </a>
+
+            <a asp-action="Index"
+               class="btn btn-outline-secondary">
+                Cancelar
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+@section Scripts
+{
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const checkboxes =
+                Array.from(
+                    document.querySelectorAll(
+                        ".permiso-checkbox"
+                    )
+                );
+
+            function buscar(codigo) {
+                return checkboxes.find(
+                    x => x.dataset.codigo === codigo
+                );
+            }
+
+            const dependencias = {
+                "CLIENTES_CREAR":
+                    "CLIENTES_VER",
+
+                "CLIENTES_EDITAR":
+                    "CLIENTES_VER",
+
+                "CLIENTES_CAMBIAR_ESTADO":
+                    "CLIENTES_VER",
+
+                "CREDITOS_CREAR":
+                    "CREDITOS_VER",
+
+                "CREDITOS_DETALLE":
+                    "CREDITOS_VER",
+
+                "PAGOS_ABONO_CAPITAL":
+                    "PAGOS_REGISTRAR",
+
+                "SOLICITUDES_APROBAR":
+                    "SOLICITUDES_VER",
+
+                "SOLICITUDES_RECHAZAR":
+                    "SOLICITUDES_VER"
+            };
+
+            function seleccionarPadre(
+                codigoHijo) {
+
+                const codigoPadre =
+                    dependencias[
+                        codigoHijo
+                    ];
+
+                if (!codigoPadre)
+                    return;
+
+                const padre =
+                    buscar(
+                        codigoPadre
+                    );
+
+                if (padre)
+                    padre.checked = true;
+            }
+
+            function hijosSeleccionados(
+                codigoPadre) {
+
+                return Object
+                    .entries(dependencias)
+                    .some(
+                        ([hijo, padre]) =>
+                            padre === codigoPadre &&
+                            buscar(hijo)?.checked
+                    );
+            }
+
+            checkboxes.forEach(
+                checkbox => {
+
+                    checkbox.addEventListener(
+                        "change",
+                        function () {
+
+                            const codigo =
+                                this.dataset.codigo;
+
+                            if (this.checked) {
+                                seleccionarPadre(
+                                    codigo
+                                );
+
+                                return;
+                            }
+
+                            if (
+                                hijosSeleccionados(
+                                    codigo
+                                )
+                            ) {
+                                this.checked =
+                                    true;
+
+                                alert(
+                                    "No puedes quitar este permiso porque existe otra función seleccionada que depende de él."
+                                );
+                            }
+                        }
+                    );
+                }
+            );
+
+            checkboxes
+                .filter(x =>
+                    x.checked)
+                .forEach(x =>
+                    seleccionarPadre(
+                        x.dataset.codigo
+                    )
+                );
+        });
+    </script>
+}

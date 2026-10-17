@@ -1,354 +1,208 @@
 @model SIGEMIC.Models.Cliente
+@using System.Security.Claims
+@using System.Text
+@inject SIGEMIC.Services.PermisoService PermisoService
 
 @{
     ViewData["Title"] = "Detalle del cliente";
+
+    bool puedeEditar = User.IsInRole("ADMINISTRADOR");
+    bool puedeCambiarEstado = User.IsInRole("ADMINISTRADOR");
+    bool puedeCrearCredito = User.IsInRole("ADMINISTRADOR");
+
+    if (User.IsInRole("CAJERO"))
+    {
+        var idTexto = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (uint.TryParse(idTexto, out uint idUsuario))
+        {
+            var permisos = (await PermisoService.ObtenerPermisosAsync(idUsuario))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            puedeEditar = permisos.Contains("CLIENTES_EDITAR");
+            puedeCambiarEstado = permisos.Contains("CLIENTES_CAMBIAR_ESTADO");
+            puedeCrearCredito = permisos.Contains("CREDITOS_CREAR");
+        }
+    }
+
+    var direccion = Model.DireccionCifrada != null
+        ? Encoding.UTF8.GetString(Model.DireccionCifrada)
+        : "No registrada";
+
+    var telefono = Model.TelefonoCifrado != null
+        ? Encoding.UTF8.GetString(Model.TelefonoCifrado)
+        : "No registrado";
 }
 
 <div class="container mt-4">
-
-    <div class="d-flex justify-content-between align-items-center mb-4">
-
+    <div class="d-flex justify-content-between align-items-start mb-4">
         <div>
-
-            <h2>Detalle del cliente</h2>
-
+            <h2 class="mb-1">Detalle del cliente</h2>
             <p class="text-muted mb-0">
                 @Model.CodigoCliente
             </p>
-
         </div>
 
-        <div class="d-flex gap-2">
+        <div class="d-flex flex-wrap gap-2">
+            @if (puedeEditar)
+            {
+                <a asp-action="Edit"
+                   asp-route-id="@Model.IdCliente"
+                   class="btn btn-outline-primary">
+                    Editar
+                </a>
+            }
 
-            <a asp-action="Edit"
-               asp-route-id="@Model.IdCliente"
-               class="btn btn-primary">
-
-                Editar
-
-            </a>
+            @if (puedeCrearCredito && Model.Estado == "ACTIVO")
+            {
+                <a asp-controller="Creditos"
+                   asp-action="Create"
+                   class="btn btn-primary">
+                    Nuevo crédito
+                </a>
+            }
 
             <a asp-action="Index"
-               class="btn btn-secondary">
-
+               class="btn btn-outline-secondary">
                 Volver
-
             </a>
-
         </div>
-
     </div>
-
 
     @if (TempData["MensajeExito"] != null)
     {
         <div class="alert alert-success">
-
             @TempData["MensajeExito"]
-
         </div>
     }
 
-
     <div class="row g-4">
-
-        <!-- =============================================
-             INFORMACIÓN PERSONAL
-             ============================================= -->
-
         <div class="col-lg-6">
-
             <div class="card shadow-sm h-100">
-
-                <div class="card-header bg-white">
-
-                    <h5 class="mb-0">
-                        Información personal
-                    </h5>
-
+                <div class="card-header fw-semibold">
+                    Información personal
                 </div>
 
                 <div class="card-body">
-
                     <dl class="row mb-0">
+                        <dt class="col-sm-5">Código</dt>
+                        <dd class="col-sm-7">@Model.CodigoCliente</dd>
 
-                        <dt class="col-sm-5">
-                            Código
-                        </dt>
-
+                        <dt class="col-sm-5">Nombre</dt>
                         <dd class="col-sm-7">
-                            @Model.CodigoCliente
+                            @Model.Usuario.Nombres @Model.Usuario.Apellidos
                         </dd>
 
+                        <dt class="col-sm-5">Usuario</dt>
+                        <dd class="col-sm-7">@Model.Usuario.Username</dd>
 
-                        <dt class="col-sm-5">
-                            Nombres
-                        </dt>
-
+                        <dt class="col-sm-5">Fecha de nacimiento</dt>
                         <dd class="col-sm-7">
-                            @Model.Usuario.Nombres
+                            @(Model.FechaNacimiento.HasValue
+                                ? Model.FechaNacimiento.Value.ToString("dd/MM/yyyy")
+                                : "No registrada")
                         </dd>
 
+                        <dt class="col-sm-5">Teléfono</dt>
+                        <dd class="col-sm-7">@telefono</dd>
 
-                        <dt class="col-sm-5">
-                            Apellidos
-                        </dt>
+                        <dt class="col-sm-5">Dirección</dt>
+                        <dd class="col-sm-7">@direccion</dd>
 
+                        <dt class="col-sm-5">Estado</dt>
                         <dd class="col-sm-7">
-                            @Model.Usuario.Apellidos
-                        </dd>
-
-
-                        <dt class="col-sm-5">
-                            Fecha nacimiento
-                        </dt>
-
-                        <dd class="col-sm-7">
-
-                            @if (Model.FechaNacimiento.HasValue)
-                            {
-                                @Model.FechaNacimiento.Value.ToString("dd/MM/yyyy")
-                            }
-                            else
-                            {
-                                <span class="text-muted">
-                                    No registrada
-                                </span>
-                            }
-
-                        </dd>
-
-
-                        <dt class="col-sm-5">
-                            Profesión
-                        </dt>
-
-                        <dd class="col-sm-7">
-                            @(Model.Profesion ?? "No registrada")
-                        </dd>
-
-
-                        <dt class="col-sm-5">
-                            Lugar de trabajo
-                        </dt>
-
-                        <dd class="col-sm-7">
-                            @(Model.LugarTrabajo ?? "No registrado")
-                        </dd>
-
-
-                        <dt class="col-sm-5">
-                            Ingreso mensual
-                        </dt>
-
-                        <dd class="col-sm-7">
-
-                            @if (Model.IngresoMensual.HasValue)
-                            {
-                                <span>
-                                    Q @Model.IngresoMensual.Value.ToString("N2")
-                                </span>
-                            }
-                            else
-                            {
-                                <span class="text-muted">
-                                    No registrado
-                                </span>
-                            }
-
-                        </dd>
-
-
-                        <dt class="col-sm-5">
-                            Estado
-                        </dt>
-
-                        <dd class="col-sm-7">
-
                             @if (Model.Estado == "ACTIVO")
                             {
-                                <span class="badge bg-success">
-                                    ACTIVO
-                                </span>
+                                <span class="badge bg-success">ACTIVO</span>
                             }
                             else
                             {
-                                <span class="badge bg-secondary">
-                                    @Model.Estado
-                                </span>
+                                <span class="badge bg-secondary">INACTIVO</span>
                             }
-
                         </dd>
-
                     </dl>
-
                 </div>
-
             </div>
-
         </div>
 
-
-        <!-- =============================================
-             INFORMACIÓN DE USUARIO
-             ============================================= -->
-
         <div class="col-lg-6">
-
             <div class="card shadow-sm h-100">
-
-                <div class="card-header bg-white">
-
-                    <h5 class="mb-0">
-                        Acceso al sistema
-                    </h5>
-
+                <div class="card-header fw-semibold">
+                    Información laboral
                 </div>
 
                 <div class="card-body">
-
                     <dl class="row mb-0">
-
-                        <dt class="col-sm-5">
-                            Usuario
-                        </dt>
-
+                        <dt class="col-sm-5">Profesión</dt>
                         <dd class="col-sm-7">
-                            @Model.Usuario.Username
+                            @(string.IsNullOrWhiteSpace(Model.Profesion)
+                                ? "No registrada"
+                                : Model.Profesion)
                         </dd>
 
-
-                        <dt class="col-sm-5">
-                            Rol
-                        </dt>
-
+                        <dt class="col-sm-5">Lugar de trabajo</dt>
                         <dd class="col-sm-7">
-                            @Model.Usuario.Rol
+                            @(string.IsNullOrWhiteSpace(Model.LugarTrabajo)
+                                ? "No registrado"
+                                : Model.LugarTrabajo)
                         </dd>
 
-
-                        <dt class="col-sm-5">
-                            Estado usuario
-                        </dt>
-
+                        <dt class="col-sm-5">Ingreso mensual</dt>
                         <dd class="col-sm-7">
-                            @Model.Usuario.Estado
+                            @(Model.IngresoMensual.HasValue
+                                ? $"Q {Model.IngresoMensual.Value:N2}"
+                                : "No registrado")
                         </dd>
 
-
-                        <dt class="col-sm-5">
-                            Fecha registro
-                        </dt>
-
+                        <dt class="col-sm-5">Fecha de registro</dt>
                         <dd class="col-sm-7">
-                            @Model.FechaRegistro.ToString("dd/MM/yyyy HH:mm")
+                            @Model.FechaRegistro.ToString("dd/MM/yyyy")
                         </dd>
-
                     </dl>
-
                 </div>
+            </div>
+        </div>
+    </div>
 
+    @if (puedeCambiarEstado)
+    {
+        <div class="card shadow-sm mt-4">
+            <div class="card-header fw-semibold">
+                Estado del cliente
             </div>
 
+            <div class="card-body">
+                <form asp-action="CambiarEstado"
+                      asp-route-id="@Model.IdCliente"
+                      method="post">
+                    @Html.AntiForgeryToken()
+
+                    @if (Model.Estado == "ACTIVO")
+                    {
+                        <p class="text-muted">
+                            Al inactivar al cliente también se inactivará su acceso al sistema.
+                        </p>
+
+                        <button type="submit"
+                                class="btn btn-outline-danger"
+                                onclick="return confirm('¿Deseas inactivar este cliente?');">
+                            Inactivar cliente
+                        </button>
+                    }
+                    else
+                    {
+                        <p class="text-muted">
+                            Al activar al cliente también se habilitará nuevamente su acceso.
+                        </p>
+
+                        <button type="submit"
+                                class="btn btn-outline-success"
+                                onclick="return confirm('¿Deseas activar este cliente?');">
+                            Activar cliente
+                        </button>
+                    }
+                </form>
+            </div>
         </div>
-
-    </div>
-
-
-    <!-- =====================================================
-         CRÉDITOS DEL CLIENTE
-         ===================================================== -->
-
-    <div class="card shadow-sm mt-4">
-
-        <div class="card-header bg-white">
-
-            <h5 class="mb-0">
-                Créditos del cliente
-            </h5>
-
-        </div>
-
-        <div class="card-body">
-
-            @if (Model.Creditos != null &&
-                 Model.Creditos.Any())
-            {
-                <div class="table-responsive">
-
-                    <table class="table table-hover align-middle">
-
-                        <thead>
-
-                            <tr>
-                                <th>Código</th>
-                                <th>Plan</th>
-                                <th>Monto</th>
-                                <th>Plazo</th>
-                                <th>Cuota</th>
-                                <th>Saldo</th>
-                                <th>Estado</th>
-                            </tr>
-
-                        </thead>
-
-                        <tbody>
-
-                            @foreach (var credito in
-                                Model.Creditos
-                                    .OrderByDescending(c =>
-                                        c.FechaOtorgamiento))
-                            {
-                                <tr>
-
-                                    <td>
-                                        @credito.CodigoCredito
-                                    </td>
-
-                                    <td>
-                                        @credito.PlanCredito.Nombre
-                                    </td>
-
-                                    <td>
-                                        Q @credito.MontoOriginal.ToString("N2")
-                                    </td>
-
-                                    <td>
-                                        @credito.PlazoMeses meses
-                                    </td>
-
-                                    <td>
-                                        Q @credito.CuotaOriginal.ToString("N2")
-                                    </td>
-
-                                    <td>
-                                        Q @credito.SaldoCapital.ToString("N2")
-                                    </td>
-
-                                    <td>
-                                        @credito.Estado
-                                    </td>
-
-                                </tr>
-                            }
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-            }
-            else
-            {
-                <div class="alert alert-info mb-0">
-
-                    Este cliente aún no tiene créditos registrados.
-
-                </div>
-            }
-
-        </div>
-
-    </div>
-
+    }
 </div>

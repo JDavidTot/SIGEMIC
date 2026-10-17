@@ -1,0 +1,392 @@
+@model SIGEMIC.ViewModels.CrearCajeroViewModel
+
+@{
+    ViewData["Title"] = "Nuevo cajero";
+
+    var modulos = Model.Permisos
+        .GroupBy(p => p.Modulo)
+        .ToList();
+}
+
+<div class="container mt-4">
+
+    <div class="mb-4">
+        <h2 class="mb-1">
+            Nuevo cajero
+        </h2>
+
+        <p class="text-muted mb-0">
+            Registra un nuevo cajero y selecciona
+            las funciones que tendrá disponibles.
+        </p>
+    </div>
+
+    <form asp-action="Create"
+          method="post"
+          id="formCrearCajero">
+
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly"
+             class="alert alert-danger">
+        </div>
+
+        <div class="card shadow-sm mb-4">
+
+            <div class="card-header fw-semibold">
+                Información del cajero
+            </div>
+
+            <div class="card-body">
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+
+                        <label asp-for="Nombres"
+                               class="form-label">
+                            Nombres
+                        </label>
+
+                        <input asp-for="Nombres"
+                               class="form-control" />
+
+                        <span asp-validation-for="Nombres"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <label asp-for="Apellidos"
+                               class="form-label">
+                            Apellidos
+                        </label>
+
+                        <input asp-for="Apellidos"
+                               class="form-control" />
+
+                        <span asp-validation-for="Apellidos"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <label asp-for="Username"
+                               class="form-label">
+                            Usuario
+                        </label>
+
+                        <input asp-for="Username"
+                               class="form-control"
+                               autocomplete="off" />
+
+                        <span asp-validation-for="Username"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <label asp-for="Correo"
+                               class="form-label">
+                            Correo electrónico
+                        </label>
+
+                        <input asp-for="Correo"
+                               type="email"
+                               class="form-control" />
+
+                        <span asp-validation-for="Correo"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <label asp-for="Contrasena"
+                               class="form-label">
+                            Contraseña
+                        </label>
+
+                        <input asp-for="Contrasena"
+                               class="form-control"
+                               autocomplete="new-password" />
+
+                        <span asp-validation-for="Contrasena"
+                              class="text-danger">
+                        </span>
+
+                        <small class="text-muted">
+                            Debe contener al menos 8 caracteres.
+                        </small>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <label asp-for="Estado"
+                               class="form-label">
+                            Estado
+                        </label>
+
+                        <select asp-for="Estado"
+                                class="form-select">
+
+                            <option value="ACTIVO">
+                                ACTIVO
+                            </option>
+
+                            <option value="INACTIVO">
+                                INACTIVO
+                            </option>
+
+                        </select>
+
+                        <span asp-validation-for="Estado"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <h4 class="mb-1">
+                Permisos iniciales
+            </h4>
+
+            <p class="text-muted mb-2">
+                Selecciona las funciones que podrá utilizar.
+            </p>
+
+            <div class="alert alert-light border small">
+                Los permisos principales se marcarán automáticamente
+                cuando selecciones una función que dependa de ellos.
+            </div>
+        </div>
+
+        @for (
+            int i = 0;
+            i < Model.Permisos.Count;
+            i++)
+        {
+            <input type="hidden"
+                   asp-for="Permisos[i].IdPermiso" />
+
+            <input type="hidden"
+                   asp-for="Permisos[i].Codigo" />
+
+            <input type="hidden"
+                   asp-for="Permisos[i].Nombre" />
+
+            <input type="hidden"
+                   asp-for="Permisos[i].Descripcion" />
+
+            <input type="hidden"
+                   asp-for="Permisos[i].Modulo" />
+        }
+
+        @foreach (var grupo in modulos)
+        {
+            <div class="card shadow-sm mb-3">
+
+                <div class="card-header bg-light">
+                    <strong>
+                        @grupo.Key
+                    </strong>
+                </div>
+
+                <div class="card-body">
+
+                    @foreach (var permiso in grupo)
+                    {
+                        var indice =
+                            Model.Permisos.IndexOf(
+                                permiso
+                            );
+
+                        <div class="form-check mb-3">
+
+                            <input asp-for="Permisos[indice].Seleccionado"
+                                   class="form-check-input permiso-checkbox"
+                                   data-codigo="@permiso.Codigo" />
+
+                            <label asp-for="Permisos[indice].Seleccionado"
+                                   class="form-check-label">
+
+                                <strong>
+                                    @permiso.Nombre
+                                </strong>
+
+                                @if (
+                                    !string.IsNullOrWhiteSpace(
+                                        permiso.Descripcion
+                                    )
+                                )
+                                {
+                                    <br />
+
+                                    <small class="text-muted">
+                                        @permiso.Descripcion
+                                    </small>
+                                }
+
+                            </label>
+
+                        </div>
+                    }
+
+                </div>
+
+            </div>
+        }
+
+        @if (!Model.Permisos.Any())
+        {
+            <div class="alert alert-warning">
+                No existen permisos activos registrados.
+            </div>
+        }
+
+        <div class="d-flex gap-2 mt-4">
+
+            <button type="submit"
+                    class="btn btn-primary">
+                Crear cajero
+            </button>
+
+            <a asp-action="Index"
+               class="btn btn-outline-secondary">
+                Cancelar
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+@section Scripts
+{
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const checkboxes =
+                Array.from(
+                    document.querySelectorAll(
+                        ".permiso-checkbox"
+                    )
+                );
+
+            function buscar(codigo) {
+                return checkboxes.find(
+                    x => x.dataset.codigo === codigo
+                );
+            }
+
+            const dependencias = {
+                "CLIENTES_CREAR":
+                    "CLIENTES_VER",
+
+                "CLIENTES_EDITAR":
+                    "CLIENTES_VER",
+
+                "CLIENTES_CAMBIAR_ESTADO":
+                    "CLIENTES_VER",
+
+                "CREDITOS_CREAR":
+                    "CREDITOS_VER",
+
+                "CREDITOS_DETALLE":
+                    "CREDITOS_VER",
+
+                "PAGOS_ABONO_CAPITAL":
+                    "PAGOS_REGISTRAR",
+
+                "SOLICITUDES_APROBAR":
+                    "SOLICITUDES_VER",
+
+                "SOLICITUDES_RECHAZAR":
+                    "SOLICITUDES_VER"
+            };
+
+            function seleccionarPadre(
+                codigoHijo) {
+
+                const codigoPadre =
+                    dependencias[
+                        codigoHijo
+                    ];
+
+                if (!codigoPadre)
+                    return;
+
+                const padre =
+                    buscar(
+                        codigoPadre
+                    );
+
+                if (padre)
+                    padre.checked = true;
+            }
+
+            function hijosSeleccionados(
+                codigoPadre) {
+
+                return Object
+                    .entries(dependencias)
+                    .some(
+                        ([hijo, padre]) =>
+                            padre === codigoPadre &&
+                            buscar(hijo)?.checked
+                    );
+            }
+
+            checkboxes.forEach(
+                checkbox => {
+
+                    checkbox.addEventListener(
+                        "change",
+                        function () {
+
+                            const codigo =
+                                this.dataset.codigo;
+
+                            if (this.checked) {
+                                seleccionarPadre(
+                                    codigo
+                                );
+
+                                return;
+                            }
+
+                            if (
+                                hijosSeleccionados(
+                                    codigo
+                                )
+                            ) {
+                                this.checked =
+                                    true;
+
+                                alert(
+                                    "No puedes quitar este permiso porque otra función seleccionada depende de él."
+                                );
+                            }
+                        }
+                    );
+                }
+            );
+        });
+    </script>
+}
