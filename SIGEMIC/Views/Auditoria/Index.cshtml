@@ -1,0 +1,1088 @@
+@model IEnumerable<SIGEMIC.Models.Auditoria>
+
+@{
+    ViewData["Title"] = "Auditoría";
+
+    string accion =
+        ViewBag.Accion ?? string.Empty;
+
+    string resultado =
+        ViewBag.Resultado ?? string.Empty;
+
+    string usuario =
+        ViewBag.Usuario ?? string.Empty;
+
+    string desde =
+        ViewBag.Desde ?? string.Empty;
+
+    string hasta =
+        ViewBag.Hasta ?? string.Empty;
+
+    int total =
+        Model.Count();
+
+    int exitosos =
+        Model.Count(a =>
+            a.Resultado == "EXITOSO"
+        );
+
+    int fallidos =
+        Model.Count(a =>
+            a.Resultado == "FALLIDO"
+        );
+
+    int usuarios =
+        Model
+            .Where(a =>
+                a.IdUsuario.HasValue
+            )
+            .Select(a =>
+                a.IdUsuario
+            )
+            .Distinct()
+            .Count();
+}
+
+<style>
+
+    .audit-title {
+        font-weight: 700;
+    }
+
+    .audit-summary-card {
+        border: 0;
+        border-radius: 14px;
+        transition: transform .15s ease,
+                    box-shadow .15s ease;
+    }
+
+    .audit-summary-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .audit-summary-number {
+        font-size: 1.65rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .audit-table-card {
+        border: 0;
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    .audit-table thead th {
+        background: #f8f9fa;
+        font-size: .82rem;
+        text-transform: uppercase;
+        letter-spacing: .025rem;
+        color: #495057;
+        white-space: nowrap;
+        padding-top: 14px;
+        padding-bottom: 14px;
+    }
+
+    .audit-table tbody td {
+        vertical-align: middle;
+        padding-top: 14px;
+        padding-bottom: 14px;
+    }
+
+    .audit-table tbody tr {
+        transition: background-color .15s ease;
+    }
+
+    .audit-table tbody tr:hover {
+        background-color: #f8fbff;
+    }
+
+    .audit-user {
+        min-width: 150px;
+    }
+
+    .audit-description {
+        min-width: 390px;
+        max-width: 600px;
+    }
+
+    .audit-description-summary {
+        font-size: .9rem;
+        color: #495057;
+        margin-bottom: 7px;
+    }
+
+    .audit-change {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 9px;
+        padding: 7px 9px;
+        margin-top: 5px;
+    }
+
+    .audit-change-field {
+        font-size: .72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+
+    .audit-value {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 8px;
+        border-radius: 7px;
+        font-size: .78rem;
+    }
+
+    .audit-value-before {
+        background: #fff1f2;
+        color: #842029;
+        border: 1px solid #f5c2c7;
+    }
+
+    .audit-value-after {
+        background: #eaf7ef;
+        color: #0f5132;
+        border: 1px solid #badbcc;
+    }
+
+    .audit-arrow {
+        font-weight: 700;
+        color: #6c757d;
+        padding-left: 3px;
+        padding-right: 3px;
+    }
+
+    .audit-table-id {
+        display: inline-block;
+        font-size: .75rem;
+        background: #f1f3f5;
+        border-radius: 6px;
+        padding: 2px 6px;
+        margin-top: 3px;
+        color: #495057;
+    }
+
+    .audit-ip {
+        font-family: monospace;
+        font-size: .82rem;
+    }
+
+    .filter-card {
+        border: 0;
+        border-radius: 14px;
+    }
+
+</style>
+
+
+<div class="container mt-4">
+
+
+    <!-- ==============================================
+         ENCABEZADO
+         ============================================== -->
+
+    <div class="d-flex flex-wrap
+                justify-content-between
+                align-items-center
+                gap-3
+                mb-4">
+
+        <div>
+
+            <h2 class="audit-title mb-1">
+
+                Auditoría del sistema
+
+            </h2>
+
+            <p class="text-muted mb-0">
+
+                Seguimiento de accesos, operaciones
+                y cambios realizados en SIGEMIC.
+
+            </p>
+
+        </div>
+
+        <div>
+
+            <span class="badge
+                         rounded-pill
+                         bg-dark
+                         fs-6
+                         px-3
+                         py-2">
+
+                @total registros
+
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==============================================
+         RESUMEN
+         ============================================== -->
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-6 col-lg-3">
+
+            <div class="card
+                        shadow-sm
+                        audit-summary-card
+                        h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Registros mostrados
+                    </small>
+
+                    <div class="audit-summary-number mt-2">
+
+                        @total
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-6 col-lg-3">
+
+            <div class="card
+                        shadow-sm
+                        audit-summary-card
+                        h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Exitosos
+                    </small>
+
+                    <div class="audit-summary-number
+                                text-success
+                                mt-2">
+
+                        @exitosos
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-6 col-lg-3">
+
+            <div class="card
+                        shadow-sm
+                        audit-summary-card
+                        h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Fallidos
+                    </small>
+
+                    <div class="audit-summary-number
+                                text-danger
+                                mt-2">
+
+                        @fallidos
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-6 col-lg-3">
+
+            <div class="card
+                        shadow-sm
+                        audit-summary-card
+                        h-100">
+
+                <div class="card-body">
+
+                    <small class="text-muted">
+                        Usuarios involucrados
+                    </small>
+
+                    <div class="audit-summary-number
+                                text-primary
+                                mt-2">
+
+                        @usuarios
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==============================================
+         FILTROS
+         ============================================== -->
+
+    <div class="card
+                shadow-sm
+                filter-card
+                mb-4">
+
+        <div class="card-header
+                    bg-white
+                    border-bottom">
+
+            <strong>
+                Filtros de búsqueda
+            </strong>
+
+        </div>
+
+        <div class="card-body">
+
+            <form method="get"
+                  asp-controller="Auditoria"
+                  asp-action="Index">
+
+                <div class="row g-3">
+
+
+                    <!-- USUARIO -->
+
+                    <div class="col-md-4">
+
+                        <label class="form-label">
+
+                            Usuario
+
+                        </label>
+
+                        <input type="text"
+                               name="usuario"
+                               value="@usuario"
+                               class="form-control"
+                               placeholder="Username o nombre" />
+
+                    </div>
+
+
+                    <!-- ACCIÓN -->
+
+                    <div class="col-md-4">
+
+                        <label class="form-label">
+
+                            Acción
+
+                        </label>
+
+                        <input type="text"
+                               name="accion"
+                               value="@accion"
+                               class="form-control"
+                               placeholder="Ej. CLIENTE, LOGIN, PAGO..." />
+
+                    </div>
+
+
+                    <!-- RESULTADO -->
+
+                    <div class="col-md-4">
+
+                        <label class="form-label">
+
+                            Resultado
+
+                        </label>
+
+                        <select name="resultado"
+                                class="form-select">
+
+                            <option value="">
+                                Todos
+                            </option>
+
+                            @if (resultado == "EXITOSO")
+                            {
+                                <option value="EXITOSO"
+                                        selected>
+                                    Exitoso
+                                </option>
+                            }
+                            else
+                            {
+                                <option value="EXITOSO">
+                                    Exitoso
+                                </option>
+                            }
+
+                            @if (resultado == "FALLIDO")
+                            {
+                                <option value="FALLIDO"
+                                        selected>
+                                    Fallido
+                                </option>
+                            }
+                            else
+                            {
+                                <option value="FALLIDO">
+                                    Fallido
+                                </option>
+                            }
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- DESDE -->
+
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+
+                            Desde
+
+                        </label>
+
+                        <input type="date"
+                               name="desde"
+                               value="@desde"
+                               class="form-control" />
+
+                    </div>
+
+
+                    <!-- HASTA -->
+
+                    <div class="col-md-3">
+
+                        <label class="form-label">
+
+                            Hasta
+
+                        </label>
+
+                        <input type="date"
+                               name="hasta"
+                               value="@hasta"
+                               class="form-control" />
+
+                    </div>
+
+
+                    <div class="col-md-6
+                                d-flex
+                                align-items-end
+                                gap-2">
+
+                        <button type="submit"
+                                class="btn btn-primary px-4">
+
+                            Buscar
+
+                        </button>
+
+                        <a asp-controller="Auditoria"
+                           asp-action="Index"
+                           class="btn btn-outline-secondary">
+
+                            Limpiar filtros
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==============================================
+         TABLA
+         ============================================== -->
+
+    <div class="card
+                shadow-sm
+                audit-table-card">
+
+        <div class="card-header
+                    bg-white
+                    py-3">
+
+            <div class="d-flex
+                        justify-content-between
+                        align-items-center">
+
+                <strong>
+                    Registro de eventos
+                </strong>
+
+                <small class="text-muted">
+
+                    Más recientes primero
+
+                </small>
+
+            </div>
+
+        </div>
+
+        <div class="card-body p-0">
+
+            @if (!Model.Any())
+            {
+                <div class="text-center
+                            py-5
+                            px-3">
+
+                    <h5>
+
+                        No hay registros
+
+                    </h5>
+
+                    <p class="text-muted mb-0">
+
+                        No se encontraron eventos
+                        con los filtros seleccionados.
+
+                    </p>
+
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+
+                    <table class="table
+                                  table-hover
+                                  audit-table
+                                  mb-0">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Fecha / Hora
+                                </th>
+
+                                <th>
+                                    Usuario
+                                </th>
+
+                                <th>
+                                    Acción
+                                </th>
+
+                                <th>
+                                    Recurso
+                                </th>
+
+                                <th>
+                                    IP
+                                </th>
+
+                                <th>
+                                    Resultado
+                                </th>
+
+                                <th>
+                                    Detalle de la operación
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                        @foreach (var auditoria in Model)
+                        {
+                            string accionClase =
+                                "bg-secondary";
+
+                            if (
+                                auditoria.Accion.Contains(
+                                    "CLIENTE"
+                                )
+                            )
+                            {
+                                accionClase =
+                                    "bg-primary";
+                            }
+                            else if (
+                                auditoria.Accion.Contains(
+                                    "LOGIN"
+                                )
+                            )
+                            {
+                                accionClase =
+                                    "bg-info text-dark";
+                            }
+                            else if (
+                                auditoria.Accion.Contains(
+                                    "LOGOUT"
+                                )
+                            )
+                            {
+                                accionClase =
+                                    "bg-secondary";
+                            }
+                            else if (
+                                auditoria.Accion.Contains(
+                                    "CREDITO"
+                                )
+                            )
+                            {
+                                accionClase =
+                                    "bg-warning text-dark";
+                            }
+                            else if (
+                                auditoria.Accion.Contains(
+                                    "PAGO"
+                                )
+                            )
+                            {
+                                accionClase =
+                                    "bg-success";
+                            }
+                            else if (
+                                auditoria.Accion.Contains(
+                                    "SOLICITUD"
+                                )
+                            )
+                            {
+                                accionClase =
+                                    "bg-dark";
+                            }
+                            else if (
+                                auditoria.Accion.Contains(
+                                    "PERMISO"
+                                )
+                            )
+                            {
+                                accionClase =
+                                    "bg-danger";
+                            }
+
+                            string descripcion =
+                                auditoria.Descripcion
+                                ?? string.Empty;
+
+                            int posicionCambios =
+                                descripcion.IndexOf(
+                                    "Cambios:",
+                                    StringComparison.OrdinalIgnoreCase
+                                );
+
+                            bool tieneCambios =
+                                posicionCambios >= 0;
+
+                            string resumenDescripcion =
+                                tieneCambios
+                                    ? descripcion[
+                                        ..posicionCambios
+                                      ].Trim()
+                                    : descripcion;
+
+                            string[] cambios =
+                                Array.Empty<string>();
+
+                            if (tieneCambios)
+                            {
+                                string textoCambios =
+                                    descripcion[
+                                        (posicionCambios + 8)..
+                                    ]
+                                    .Trim()
+                                    .TrimEnd('.');
+
+                                cambios =
+                                    textoCambios.Split(
+                                        "; ",
+                                        StringSplitOptions
+                                            .RemoveEmptyEntries
+                                    );
+                            }
+
+
+                            <tr>
+
+                                <!-- FECHA -->
+
+                                <td class="text-nowrap">
+
+                                    <strong>
+
+                                        @(
+                                            auditoria.FechaHora
+                                                .ToString(
+                                                    "dd/MM/yyyy"
+                                                )
+                                        )
+
+                                    </strong>
+
+                                    <div class="small text-muted">
+
+                                        @(
+                                            auditoria.FechaHora
+                                                .ToString(
+                                                    "HH:mm:ss"
+                                                )
+                                        )
+
+                                    </div>
+
+                                </td>
+
+
+                                <!-- USUARIO -->
+
+                                <td class="audit-user">
+
+                                    @if (
+                                        auditoria.Usuario != null
+                                    )
+                                    {
+                                        <div class="fw-semibold">
+
+                                            @(
+                                                auditoria.Usuario.Username
+                                            )
+
+                                        </div>
+
+                                        <div class="small text-muted">
+
+                                            @(
+                                                auditoria.Usuario.Nombres
+                                            )
+
+                                            @(
+                                                auditoria.Usuario.Apellidos
+                                            )
+
+                                        </div>
+
+                                        <span class="badge
+                                                     bg-light
+                                                     text-dark
+                                                     border
+                                                     mt-1">
+
+                                            @(
+                                                auditoria.Usuario.Rol
+                                            )
+
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">
+
+                                            No identificado
+
+                                        </span>
+                                    }
+
+                                </td>
+
+
+                                <!-- ACCIÓN -->
+
+                                <td>
+
+                                    <span class="badge
+                                                 rounded-pill
+                                                 @accionClase
+                                                 px-3
+                                                 py-2">
+
+                                        @(
+                                            auditoria.Accion
+                                        )
+
+                                    </span>
+
+                                </td>
+
+
+                                <!-- RECURSO -->
+
+                                <td>
+
+                                    @if (
+                                        !string.IsNullOrWhiteSpace(
+                                            auditoria.TablaAfectada
+                                        )
+                                    )
+                                    {
+                                        <div class="fw-semibold">
+
+                                            @(
+                                                auditoria.TablaAfectada
+                                            )
+
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">
+                                            -
+                                        </span>
+                                    }
+
+                                    @if (
+                                        !string.IsNullOrWhiteSpace(
+                                            auditoria.RegistroAfectado
+                                        )
+                                    )
+                                    {
+                                        <span class="audit-table-id">
+
+                                            ID:
+                                            @(
+                                                auditoria.RegistroAfectado
+                                            )
+
+                                        </span>
+                                    }
+
+                                </td>
+
+
+                                <!-- IP -->
+
+                                <td>
+
+                                    <span class="audit-ip">
+
+                                        @(
+                                            auditoria.DireccionIp
+                                            ?? "-"
+                                        )
+
+                                    </span>
+
+                                </td>
+
+
+                                <!-- RESULTADO -->
+
+                                <td>
+
+                                    @if (
+                                        auditoria.Resultado ==
+                                        "EXITOSO"
+                                    )
+                                    {
+                                        <span class="badge
+                                                     rounded-pill
+                                                     bg-success">
+
+                                            ✓ EXITOSO
+
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge
+                                                     rounded-pill
+                                                     bg-danger">
+
+                                            ✕ FALLIDO
+
+                                        </span>
+                                    }
+
+                                </td>
+
+
+                                <!-- DESCRIPCIÓN -->
+
+                                <td class="audit-description">
+
+                                    @if (
+                                        string.IsNullOrWhiteSpace(
+                                            descripcion
+                                        )
+                                    )
+                                    {
+                                        <span class="text-muted">
+
+                                            Sin descripción
+
+                                        </span>
+                                    }
+                                    else if (tieneCambios)
+                                    {
+                                        <div class="audit-description-summary">
+
+                                            @resumenDescripcion
+
+                                        </div>
+
+                                        @foreach (
+                                            string cambio in cambios
+                                        )
+                                        {
+                                            int separadorCampo =
+                                                cambio.IndexOf(
+                                                    ':'
+                                                );
+
+                                            string campo =
+                                                separadorCampo >= 0
+                                                    ? cambio[
+                                                        ..separadorCampo
+                                                      ].Trim()
+                                                    : "Cambio";
+
+                                            string detalle =
+                                                separadorCampo >= 0
+                                                    ? cambio[
+                                                        (separadorCampo + 1)..
+                                                      ].Trim()
+                                                    : cambio.Trim();
+
+                                            string[] valores =
+                                                detalle.Split(
+                                                    " → ",
+                                                    2,
+                                                    StringSplitOptions.None
+                                                );
+
+                                            <div class="audit-change">
+
+                                                <div class="audit-change-field">
+
+                                                    @campo
+
+                                                </div>
+
+                                                @if (
+                                                    valores.Length == 2
+                                                )
+                                                {
+                                                    <div class="d-flex
+                                                                flex-wrap
+                                                                align-items-center
+                                                                gap-1">
+
+                                                        <span class="audit-value
+                                                                     audit-value-before">
+
+                                                            <strong>
+                                                                Antes:
+                                                            </strong>
+
+                                                            @valores[0]
+
+                                                        </span>
+
+                                                        <span class="audit-arrow">
+
+                                                            →
+
+                                                        </span>
+
+                                                        <span class="audit-value
+                                                                     audit-value-after">
+
+                                                            <strong>
+                                                                Después:
+                                                            </strong>
+
+                                                            @valores[1]
+
+                                                        </span>
+
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <span class="small">
+
+                                                        @detalle
+
+                                                    </span>
+                                                }
+
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="audit-description-summary mb-0">
+
+                                            @descripcion
+
+                                        </div>
+                                    }
+
+                                </td>
+
+                            </tr>
+                        }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+
+
+    <div class="alert
+                alert-light
+                border
+                mt-3">
+
+        <small class="text-muted">
+
+            Se muestran como máximo los 500 registros
+            más recientes que coincidan con los filtros
+            seleccionados.
+
+        </small>
+
+    </div>
+
+</div>

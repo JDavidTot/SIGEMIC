@@ -25,96 +25,224 @@ namespace SIGEMIC.Data
         public DbSet<Permiso> Permisos { get; set; }
         public DbSet<UsuarioPermiso> UsuarioPermisos { get; set; }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        protected override void OnModelCreating(
+            ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // =================================================
+            // USUARIO - CLIENTE
+            // =================================================
 
             modelBuilder.Entity<Usuario>()
                 .HasOne(u => u.Cliente)
                 .WithOne(c => c.Usuario)
-                .HasForeignKey<Cliente>(c => c.IdUsuario)
-                .OnDelete(DeleteBehavior.Restrict);
+                .HasForeignKey<Cliente>(
+                    c => c.IdUsuario
+                )
+                .OnDelete(
+                    DeleteBehavior.Restrict
+                );
 
-            modelBuilder.Entity<Banco>(entity =>
-            {
-                entity.HasKey(e => e.IdBanco);
+            // =================================================
+            // BANCOS
+            // =================================================
 
-                entity.HasIndex(e => new
+            modelBuilder.Entity<Banco>(
+                entity =>
                 {
-                    e.Nombre,
-                    e.NumeroCuenta
-                })
-                .IsUnique();
-            });
+                    entity.HasKey(
+                        e => e.IdBanco
+                    );
 
+                    entity.HasIndex(e => new
+                    {
+                        e.Nombre,
+                        e.NumeroCuenta
+                    })
+                    .IsUnique();
+                }
+            );
 
-            modelBuilder.Entity<SolicitudPago>(entity =>
-            {
-                entity.HasKey(e => e.IdSolicitud);
+            // =================================================
+            // PAGOS
+            // =================================================
 
-                entity.Property(e => e.Monto)
-                    .HasPrecision(14, 2);
-
-                entity.HasIndex(e => new
+            modelBuilder.Entity<Pago>(
+                entity =>
                 {
-                    e.IdBanco,
-                    e.NumeroBoleta
-                })
-                .IsUnique();
+                    entity.HasKey(
+                        e => e.IdPago
+                    );
 
-                entity.HasIndex(e => e.IdPago)
-                .IsUnique();
+                    entity.HasIndex(e => new
+                    {
+                        e.IdBanco,
+                        e.NumeroBoleta
+                    })
+                    .IsUnique();
 
-                entity.HasOne(e => e.Cliente)
+                    entity.HasOne(e => e.Banco)
+                        .WithMany(b => b.Pagos)
+                        .HasForeignKey(e =>
+                            e.IdBanco
+                        )
+                        .OnDelete(
+                            DeleteBehavior.Restrict
+                        );
+                }
+            );
+
+            // =================================================
+            // SOLICITUDES DE PAGO
+            // =================================================
+
+            modelBuilder.Entity<SolicitudPago>(
+                entity =>
+                {
+                    entity.HasKey(
+                        e => e.IdSolicitud
+                    );
+
+                    entity.Property(
+                        e => e.Monto
+                    )
+                    .HasPrecision(
+                        14,
+                        2
+                    );
+
+                    entity.HasIndex(e => new
+                    {
+                        e.IdBanco,
+                        e.NumeroBoleta
+                    })
+                    .IsUnique();
+
+                    entity.HasIndex(
+                        e => e.IdPago
+                    )
+                    .IsUnique();
+
+                    entity.HasOne(
+                        e => e.Cliente
+                    )
                     .WithMany()
-                    .HasForeignKey(e => e.IdCliente)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .HasForeignKey(
+                        e => e.IdCliente
+                    )
+                    .OnDelete(
+                        DeleteBehavior.Restrict
+                    );
 
-                entity.HasOne(e => e.Credito)
+                    entity.HasOne(
+                        e => e.Credito
+                    )
                     .WithMany()
-                    .HasForeignKey(e => e.IdCredito)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .HasForeignKey(
+                        e => e.IdCredito
+                    )
+                    .OnDelete(
+                        DeleteBehavior.Restrict
+                    );
 
-                entity.HasOne(e => e.Cuota)
+                    entity.HasOne(
+                        e => e.Cuota
+                    )
                     .WithMany()
-                    .HasForeignKey(e => e.IdCuota)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .HasForeignKey(
+                        e => e.IdCuota
+                    )
+                    .OnDelete(
+                        DeleteBehavior.Restrict
+                    );
 
-                entity.HasOne(e => e.Banco)
-                    .WithMany(e => e.SolicitudesPago)
-                    .HasForeignKey(e => e.IdBanco)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    entity.HasOne(
+                        e => e.Banco
+                    )
+                    .WithMany(
+                        e => e.SolicitudesPago
+                    )
+                    .HasForeignKey(
+                        e => e.IdBanco
+                    )
+                    .OnDelete(
+                        DeleteBehavior.Restrict
+                    );
 
-                entity.HasOne(e => e.UsuarioRevision)
+                    entity.HasOne(
+                        e => e.UsuarioRevision
+                    )
                     .WithMany()
-                    .HasForeignKey(e => e.IdUsuarioRevision)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .HasForeignKey(
+                        e => e.IdUsuarioRevision
+                    )
+                    .OnDelete(
+                        DeleteBehavior.Restrict
+                    );
 
-                entity.HasOne(e => e.Pago)
+                    entity.HasOne(
+                        e => e.Pago
+                    )
                     .WithOne()
-                    .HasForeignKey<SolicitudPago>(e => e.IdPago)
-                    .OnDelete(DeleteBehavior.Restrict);
-            });
+                    .HasForeignKey<SolicitudPago>(
+                        e => e.IdPago
+                    )
+                    .OnDelete(
+                        DeleteBehavior.Restrict
+                    );
+                }
+            );
 
-                        modelBuilder.Entity<Permiso>(entity =>
+            // =================================================
+            // PERMISOS
+            // =================================================
+
+            modelBuilder.Entity<Permiso>(
+                entity =>
                 {
-                    entity.ToTable("permisos");
-                    entity.HasKey(e => e.IdPermiso);
+                    entity.ToTable(
+                        "permisos"
+                    );
 
-                    entity.HasIndex(e => e.Codigo)
-                        .IsUnique();
+                    entity.HasKey(
+                        e => e.IdPermiso
+                    );
 
-                    entity.Property(e => e.Estado)
-                        .HasColumnType("enum('ACTIVO','INACTIVO')")
-                        .HasDefaultValue("ACTIVO");
+                    entity.HasIndex(
+                        e => e.Codigo
+                    )
+                    .IsUnique();
 
-                    entity.Property(e => e.FechaCreacion)
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-                });
+                    entity.Property(
+                        e => e.Estado
+                    )
+                    .HasColumnType(
+                        "enum('ACTIVO','INACTIVO')"
+                    )
+                    .HasDefaultValue(
+                        "ACTIVO"
+                    );
 
-                modelBuilder.Entity<UsuarioPermiso>(entity =>
+                    entity.Property(
+                        e => e.FechaCreacion
+                    )
+                    .HasDefaultValueSql(
+                        "CURRENT_TIMESTAMP"
+                    );
+                }
+            );
+
+            // =================================================
+            // USUARIO - PERMISOS
+            // =================================================
+
+            modelBuilder.Entity<UsuarioPermiso>(
+                entity =>
                 {
-                    entity.ToTable("usuario_permisos");
+                    entity.ToTable(
+                        "usuario_permisos"
+                    );
 
                     entity.HasKey(e => new
                     {
@@ -122,20 +250,36 @@ namespace SIGEMIC.Data
                         e.IdPermiso
                     });
 
-                    entity.Property(e => e.FechaAsignacion)
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                    entity.Property(
+                        e => e.FechaAsignacion
+                    )
+                    .HasDefaultValueSql(
+                        "CURRENT_TIMESTAMP"
+                    );
 
-                    entity.HasOne(e => e.Usuario)
-                        .WithMany()
-                        .HasForeignKey(e => e.IdUsuario)
-                        .OnDelete(DeleteBehavior.Restrict);
+                    entity.HasOne(
+                        e => e.Usuario
+                    )
+                    .WithMany()
+                    .HasForeignKey(
+                        e => e.IdUsuario
+                    )
+                    .OnDelete(
+                        DeleteBehavior.Restrict
+                    );
 
-                    entity.HasOne(e => e.Permiso)
-                        .WithMany()
-                        .HasForeignKey(e => e.IdPermiso)
-                        .OnDelete(DeleteBehavior.Restrict);
-                });
-
+                    entity.HasOne(
+                        e => e.Permiso
+                    )
+                    .WithMany()
+                    .HasForeignKey(
+                        e => e.IdPermiso
+                    )
+                    .OnDelete(
+                        DeleteBehavior.Restrict
+                    );
+                }
+            );
         }
     }
 }

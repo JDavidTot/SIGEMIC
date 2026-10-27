@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace SIGEMIC.Models
@@ -25,10 +26,13 @@ namespace SIGEMIC.Models
 
         public decimal TotalPagar { get; set; }
 
-        // MONTO QUE EL CLIENTE ENTREGA
-  
+        // =====================================================
+        // MONTO
+        // =====================================================
 
-        [Required(ErrorMessage = "Ingrese el monto a pagar.")]
+        [Required(
+            ErrorMessage = "Ingrese el monto a pagar."
+        )]
         [Range(
             typeof(decimal),
             "0.01",
@@ -38,22 +42,51 @@ namespace SIGEMIC.Models
         [Display(Name = "Monto recibido")]
         public decimal MontoPago { get; set; }
 
-
+        // =====================================================
         // FORMA DE PAGO
+        // =====================================================
 
-        [Required(ErrorMessage = "Seleccione una forma de pago.")]
+        [Required(
+            ErrorMessage = "Seleccione una forma de pago."
+        )]
         [Display(Name = "Forma de pago")]
         public uint IdFormaPago { get; set; }
 
+        // =====================================================
+        // DATOS PARA TRANSFERENCIA / DEPÓSITO
+        // Se validarán condicionalmente en el controlador.
+        // =====================================================
 
+        [Display(Name = "Banco")]
+        public uint? IdBanco { get; set; }
+
+        [StringLength(
+            100,
+            ErrorMessage =
+                "El número de boleta no puede superar los 100 caracteres."
+        )]
+        [Display(Name = "Número de boleta")]
+        public string? NumeroBoleta { get; set; }
+
+        [Display(Name = "Comprobante")]
+        public IFormFile? Comprobante { get; set; }
+
+        // =====================================================
         // OBSERVACIÓN
-
+        // =====================================================
 
         [Display(Name = "Observación")]
         [StringLength(255)]
         public string? Observacion { get; set; }
 
+        // =====================================================
+        // LISTAS
+        // =====================================================
+
         public List<SelectListItem> FormasPago { get; set; }
-            = new List<SelectListItem>();
+            = new();
+
+        public List<Banco> Bancos { get; set; }
+            = new();
     }
 }

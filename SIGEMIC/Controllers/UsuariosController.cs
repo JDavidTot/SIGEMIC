@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SIGEMIC.Data;
 using SIGEMIC.Models;
+using SIGEMIC.Services;
 using SIGEMIC.ViewModels;
 
 namespace SIGEMIC.Controllers;
@@ -13,11 +14,22 @@ namespace SIGEMIC.Controllers;
 public class UsuariosController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly AuditoriaService _auditoriaService;
+    private readonly ILogger<UsuariosController> _logger;
 
-    public UsuariosController(ApplicationDbContext context)
+    public UsuariosController(
+        ApplicationDbContext context,
+        AuditoriaService auditoriaService,
+        ILogger<UsuariosController> logger)
     {
         _context = context;
+        _auditoriaService = auditoriaService;
+        _logger = logger;
     }
+
+    // =====================================================
+    // LISTADO
+    // =====================================================
 
     [HttpGet]
     public async Task<IActionResult> Index()
@@ -32,6 +44,10 @@ public class UsuariosController : Controller
         return View(cajeros);
     }
 
+    // =====================================================
+    // CREAR - GET
+    // =====================================================
+
     [HttpGet]
     public async Task<IActionResult> Create()
     {
@@ -41,6 +57,10 @@ public class UsuariosController : Controller
 
         return View(model);
     }
+
+    // =====================================================
+    // CREAR - POST
+    // =====================================================
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -72,38 +92,37 @@ public class UsuariosController : Controller
 
         try
         {
-            var usuario =
-                new Usuario
-                {
-                    Nombres =
-                        model.Nombres.Trim(),
+            var usuario = new Usuario
+            {
+                Nombres =
+                    model.Nombres.Trim(),
 
-                    Apellidos =
-                        model.Apellidos.Trim(),
+                Apellidos =
+                    model.Apellidos.Trim(),
 
-                    Username =
-                        model.Username,
+                Username =
+                    model.Username,
 
-                    CorreoCifrado =
-                        Encoding.UTF8.GetBytes(
-                            model.Correo.Trim()
-                        ),
+                CorreoCifrado =
+                    Encoding.UTF8.GetBytes(
+                        model.Correo.Trim()
+                    ),
 
-                    Rol =
-                        "CAJERO",
+                Rol =
+                    "CAJERO",
 
-                    Estado =
-                        model.Estado,
+                Estado =
+                    model.Estado,
 
-                    IntentosFallidos =
-                        0,
+                IntentosFallidos =
+                    0,
 
-                    UltimoAcceso =
-                        null,
+                UltimoAcceso =
+                    null,
 
-                    FechaCreacion =
-                        DateTime.Now
-                };
+                FechaCreacion =
+                    DateTime.Now
+            };
 
             var hasher =
                 new PasswordHasher<Usuario>();
@@ -120,6 +139,10 @@ public class UsuariosController : Controller
 
             await _context.SaveChangesAsync();
 
+            // ==========================================
+            // PERMISOS SELECCIONADOS
+            // ==========================================
+
             var idsSeleccionados =
                 model.Permisos
                     .Where(p =>
@@ -129,13 +152,13 @@ public class UsuariosController : Controller
                     .Distinct()
                     .ToList();
 
+            // Agregar dependencias necesarias.
             var idsFinales =
                 await ObtenerPermisosConDependencias(
                     idsSeleccionados
                 );
 
-            foreach (
-                var idPermiso in idsFinales)
+            foreach (var idPermiso in idsFinales)
             {
                 _context.UsuarioPermisos.Add(
                     new UsuarioPermiso
@@ -156,6 +179,34 @@ public class UsuariosController : Controller
 
             await transaction.CommitAsync();
 
+            // ==========================================
+            // AUDITORÍA
+            // ==========================================
+
+            var codigosPermisos =
+                await ObtenerCodigosPermisosAsync(
+                    idsFinales
+                );
+
+            string permisosTexto =
+                codigosPermisos.Count > 0
+                    ? string.Join(
+                        ", ",
+                        codigosPermisos
+                    )
+                    : "Sin permisos asignados";
+
+            await RegistrarAuditoriaSeguroAsync(
+                "CAJERO_CREADO",
+                "usuarios",
+                usuario.IdUsuario.ToString(),
+
+                $"Cajero {usuario.Username} creado. " +
+                $"Nombre: {usuario.Nombres} {usuario.Apellidos}; " +
+                $"Estado: {usuario.Estado}; " +
+                $"Permisos iniciales: {permisosTexto}."
+            );
+
             TempData["Exito"] =
                 "El cajero fue creado correctamente.";
 
@@ -171,6 +222,10 @@ public class UsuariosController : Controller
         }
     }
 
+    // =====================================================
+    // EDITAR - GET
+    // =====================================================
+
     [HttpGet]
     public async Task<IActionResult> Edit(
         uint id)
@@ -184,7 +239,9 @@ public class UsuariosController : Controller
                 );
 
         if (usuario == null)
+        {
             return NotFound();
+        }
 
         var model =
             new EditarCajeroViewModel
@@ -215,6 +272,10 @@ public class UsuariosController : Controller
         return View(model);
     }
 
+    // =====================================================
+    // EDITAR - POST
+    // =====================================================
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(
@@ -229,17 +290,21 @@ public class UsuariosController : Controller
                 );
 
         if (usuario == null)
+        {
             return NotFound();
+        }
 
         model.Username =
             model.Username.Trim();
 
-        if (await _context.Usuarios
-            .AnyAsync(u =>
+        if (
+            await _context.Usuarios.AnyAsync(u =>
                 u.Username ==
                     model.Username &&
                 u.IdUsuario !=
-                    model.IdUsuario))
+                    model.IdUsuario
+            )
+        )
         {
             ModelState.AddModelError(
                 nameof(model.Username),
@@ -261,30 +326,128 @@ public class UsuariosController : Controller
         }
 
         if (!ModelState.IsValid)
+        {
             return View(model);
+        }
 
-        usuario.Nombres =
+        // ==========================================
+        // GUARDAR VALORES ANTERIORES
+        // ==========================================
+
+        string nombresAnterior =
+            usuario.Nombres;
+
+        string apellidosAnterior =
+            usuario.Apellidos;
+
+        string usernameAnterior =
+            usuario.Username;
+
+        string estadoAnterior =
+            usuario.Estado;
+
+        string? correoAnterior =
+            usuario.CorreoCifrado != null
+                ? Encoding.UTF8.GetString(
+                    usuario.CorreoCifrado
+                )
+                : null;
+
+        // ==========================================
+        // NUEVOS VALORES
+        // ==========================================
+
+        string nombresNuevo =
             model.Nombres.Trim();
 
-        usuario.Apellidos =
+        string apellidosNuevo =
             model.Apellidos.Trim();
 
-        usuario.Username =
+        string usernameNuevo =
             model.Username;
+
+        string correoNuevo =
+            model.Correo.Trim();
+
+        string estadoNuevo =
+            model.Estado;
+
+        bool contrasenaActualizada =
+            !string.IsNullOrWhiteSpace(
+                model.NuevaContrasena
+            );
+
+        // ==========================================
+        // DETECTAR CAMBIOS
+        // ==========================================
+
+        var cambios =
+            new List<string>();
+
+        AgregarCambio(
+            cambios,
+            "Nombres",
+            nombresAnterior,
+            nombresNuevo
+        );
+
+        AgregarCambio(
+            cambios,
+            "Apellidos",
+            apellidosAnterior,
+            apellidosNuevo
+        );
+
+        AgregarCambio(
+            cambios,
+            "Usuario",
+            usernameAnterior,
+            usernameNuevo
+        );
+
+        AgregarCambioProtegido(
+            cambios,
+            "Correo",
+            correoAnterior,
+            correoNuevo
+        );
+
+        AgregarCambio(
+            cambios,
+            "Estado",
+            estadoAnterior,
+            estadoNuevo
+        );
+
+        if (contrasenaActualizada)
+        {
+            cambios.Add(
+                "Contraseña: Sin cambios → Actualizada"
+            );
+        }
+
+        // ==========================================
+        // ACTUALIZAR
+        // ==========================================
+
+        usuario.Nombres =
+            nombresNuevo;
+
+        usuario.Apellidos =
+            apellidosNuevo;
+
+        usuario.Username =
+            usernameNuevo;
 
         usuario.CorreoCifrado =
             Encoding.UTF8.GetBytes(
-                model.Correo.Trim()
+                correoNuevo
             );
 
         usuario.Estado =
-            model.Estado;
+            estadoNuevo;
 
-        if (
-            !string.IsNullOrWhiteSpace(
-                model.NuevaContrasena
-            )
-        )
+        if (contrasenaActualizada)
         {
             var hasher =
                 new PasswordHasher<Usuario>();
@@ -292,11 +455,29 @@ public class UsuariosController : Controller
             usuario.PasswordHash =
                 hasher.HashPassword(
                     usuario,
-                    model.NuevaContrasena
+                    model.NuevaContrasena!
                 );
         }
 
         await _context.SaveChangesAsync();
+
+        // ==========================================
+        // AUDITORÍA
+        // ==========================================
+
+        string descripcion =
+            cambios.Count > 0
+                ? $"Cajero {usuario.Username} actualizado. " +
+                  $"Cambios: {string.Join("; ", cambios)}."
+                : $"Cajero {usuario.Username} actualizado. " +
+                  "No se detectaron cambios en los datos editables.";
+
+        await RegistrarAuditoriaSeguroAsync(
+            "CAJERO_EDITADO",
+            "usuarios",
+            usuario.IdUsuario.ToString(),
+            descripcion
+        );
 
         TempData["Exito"] =
             "El cajero fue actualizado correctamente.";
@@ -305,6 +486,10 @@ public class UsuariosController : Controller
             nameof(Index)
         );
     }
+
+    // =====================================================
+    // PERMISOS - GET
+    // =====================================================
 
     [HttpGet]
     public async Task<IActionResult> Permisos(
@@ -319,7 +504,9 @@ public class UsuariosController : Controller
                 );
 
         if (usuario == null)
+        {
             return NotFound();
+        }
 
         var asignados =
             await _context.UsuarioPermisos
@@ -384,6 +571,10 @@ public class UsuariosController : Controller
         return View(model);
     }
 
+    // =====================================================
+    // PERMISOS - POST
+    // =====================================================
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Permisos(
@@ -398,7 +589,9 @@ public class UsuariosController : Controller
                 );
 
         if (usuario == null)
+        {
             return NotFound();
+        }
 
         await using var transaction =
             await _context.Database
@@ -406,6 +599,10 @@ public class UsuariosController : Controller
 
         try
         {
+            // ==========================================
+            // PERMISOS ANTERIORES
+            // ==========================================
+
             var actuales =
                 await _context.UsuarioPermisos
                     .Where(up =>
@@ -413,8 +610,18 @@ public class UsuariosController : Controller
                             model.IdUsuario)
                     .ToListAsync();
 
+            var idsAnteriores =
+                actuales
+                    .Select(up =>
+                        up.IdPermiso)
+                    .ToHashSet();
+
             _context.UsuarioPermisos
                 .RemoveRange(actuales);
+
+            // ==========================================
+            // NUEVA SELECCIÓN
+            // ==========================================
 
             var idsSeleccionados =
                 model.Permisos
@@ -430,8 +637,7 @@ public class UsuariosController : Controller
                     idsSeleccionados
                 );
 
-            foreach (
-                var idPermiso in idsFinales)
+            foreach (var idPermiso in idsFinales)
             {
                 _context.UsuarioPermisos.Add(
                     new UsuarioPermiso
@@ -452,6 +658,77 @@ public class UsuariosController : Controller
 
             await transaction.CommitAsync();
 
+            // ==========================================
+            // COMPARAR ANTES Y DESPUÉS
+            // ==========================================
+
+            var idsFinalesSet =
+                idsFinales.ToHashSet();
+
+            var idsAgregados =
+                idsFinalesSet
+                    .Except(idsAnteriores)
+                    .ToList();
+
+            var idsRetirados =
+                idsAnteriores
+                    .Except(idsFinalesSet)
+                    .ToList();
+
+            var codigosAgregados =
+                await ObtenerCodigosPermisosAsync(
+                    idsAgregados
+                );
+
+            var codigosRetirados =
+                await ObtenerCodigosPermisosAsync(
+                    idsRetirados
+                );
+
+            var cambios =
+                new List<string>();
+
+            if (codigosAgregados.Count > 0)
+            {
+                cambios.Add(
+                    "Permisos agregados: Sin dato → " +
+                    string.Join(
+                        ", ",
+                        codigosAgregados
+                    )
+                );
+            }
+
+            if (codigosRetirados.Count > 0)
+            {
+                cambios.Add(
+                    "Permisos retirados: " +
+                    string.Join(
+                        ", ",
+                        codigosRetirados
+                    ) +
+                    " → Sin dato"
+                );
+            }
+
+            // ==========================================
+            // AUDITORÍA
+            // ==========================================
+
+            string descripcion =
+                cambios.Count > 0
+                    ? $"Permisos del cajero {usuario.Username} actualizados. " +
+                      $"Cambios: {string.Join("; ", cambios)}."
+                    : $"Permisos del cajero {usuario.Username} revisados. " +
+                      "No se detectaron cambios.";
+
+            await RegistrarAuditoriaSeguroAsync(
+                "PERMISOS_MODIFICADOS",
+                "usuario_permisos",
+                usuario.IdUsuario.ToString(),
+                descripcion
+            );
+
             TempData["Exito"] =
                 $"Los permisos de {usuario.Nombres} fueron actualizados.";
 
@@ -470,6 +747,7 @@ public class UsuariosController : Controller
     // =====================================================
     // CARGAR PERMISOS EN CREACIÓN
     // =====================================================
+
     private async Task CargarPermisos(
         CrearCajeroViewModel model)
     {
@@ -519,6 +797,7 @@ public class UsuariosController : Controller
     // =====================================================
     // NORMALIZAR PERMISOS Y AGREGAR DEPENDENCIAS
     // =====================================================
+
     private async Task<List<uint>>
         ObtenerPermisosConDependencias(
             IEnumerable<uint> idsSeleccionados)
@@ -633,14 +912,188 @@ public class UsuariosController : Controller
             "SOLICITUDES_VER"
         );
 
-        var idsValidos =
-            permisosActivos
-                .Where(p =>
-                    ids.Contains(p.IdPermiso))
-                .Select(p =>
-                    p.IdPermiso)
+        return permisosActivos
+            .Where(p =>
+                ids.Contains(
+                    p.IdPermiso
+                ))
+            .Select(p =>
+                p.IdPermiso)
+            .ToList();
+    }
+
+    // =====================================================
+    // OBTENER CÓDIGOS DE PERMISOS
+    // =====================================================
+
+    private async Task<List<string>>
+        ObtenerCodigosPermisosAsync(
+            IEnumerable<uint> idsPermisos)
+    {
+        var ids =
+            idsPermisos
+                .Distinct()
                 .ToList();
 
-        return idsValidos;
+        if (ids.Count == 0)
+        {
+            return new List<string>();
+        }
+
+        return await _context.Permisos
+            .AsNoTracking()
+            .Where(p =>
+                ids.Contains(
+                    p.IdPermiso
+                ))
+            .OrderBy(p =>
+                p.Modulo)
+            .ThenBy(p =>
+                p.Codigo)
+            .Select(p =>
+                p.Codigo)
+            .ToListAsync();
+    }
+
+    // =====================================================
+    // AUDITORÍA SEGURA
+    // =====================================================
+
+    private async Task RegistrarAuditoriaSeguroAsync(
+        string accion,
+        string tablaAfectada,
+        string registroAfectado,
+        string descripcion)
+    {
+        try
+        {
+            await _auditoriaService
+                .RegistrarUsuarioActualAsync(
+                    accion,
+                    tablaAfectada,
+                    registroAfectado,
+                    descripcion,
+                    "EXITOSO"
+                );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "No fue posible registrar la auditoría de la acción {Accion}.",
+                accion
+            );
+        }
+    }
+
+    // =====================================================
+    // DETECTAR CAMBIOS NORMALES
+    // =====================================================
+
+    private static void AgregarCambio(
+        ICollection<string> cambios,
+        string campo,
+        string? valorAnterior,
+        string? valorNuevo)
+    {
+        string anterior =
+            NormalizarParaComparar(
+                valorAnterior
+            );
+
+        string nuevo =
+            NormalizarParaComparar(
+                valorNuevo
+            );
+
+        if (
+            string.Equals(
+                anterior,
+                nuevo,
+                StringComparison.Ordinal
+            )
+        )
+        {
+            return;
+        }
+
+        cambios.Add(
+            $"{campo}: " +
+            $"{MostrarValor(valorAnterior)} → " +
+            $"{MostrarValor(valorNuevo)}"
+        );
+    }
+
+    // =====================================================
+    // DATOS SENSIBLES
+    // El correo real no se copia al log.
+    // =====================================================
+
+    private static void AgregarCambioProtegido(
+        ICollection<string> cambios,
+        string campo,
+        string? valorAnterior,
+        string? valorNuevo)
+    {
+        string anterior =
+            NormalizarParaComparar(
+                valorAnterior
+            );
+
+        string nuevo =
+            NormalizarParaComparar(
+                valorNuevo
+            );
+
+        if (
+            string.Equals(
+                anterior,
+                nuevo,
+                StringComparison.OrdinalIgnoreCase
+            )
+        )
+        {
+            return;
+        }
+
+        string estadoAnterior =
+            string.IsNullOrWhiteSpace(
+                valorAnterior
+            )
+                ? "Sin dato"
+                : "Dato registrado";
+
+        string estadoNuevo =
+            string.IsNullOrWhiteSpace(
+                valorNuevo
+            )
+                ? "Sin dato"
+                : "Dato actualizado";
+
+        cambios.Add(
+            $"{campo}: " +
+            $"{estadoAnterior} → " +
+            $"{estadoNuevo}"
+        );
+    }
+
+    private static string NormalizarParaComparar(
+        string? valor)
+    {
+        return string.IsNullOrWhiteSpace(
+            valor
+        )
+            ? string.Empty
+            : valor.Trim();
+    }
+
+    private static string MostrarValor(
+        string? valor)
+    {
+        return string.IsNullOrWhiteSpace(
+            valor
+        )
+            ? "Sin dato"
+            : valor.Trim();
     }
 }

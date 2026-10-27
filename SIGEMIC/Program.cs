@@ -5,37 +5,34 @@ using SIGEMIC.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-
 const string esquemaAutenticacion =
     "SIGEMICCookie";
 
-
-
 builder.Services.AddControllersWithViews();
-
 
 var connectionString =
     builder.Configuration
-        .GetConnectionString("DefaultConnection");
+        .GetConnectionString(
+            "DefaultConnection"
+        );
 
-
-if (string.IsNullOrWhiteSpace(connectionString))
+if (string.IsNullOrWhiteSpace(
+    connectionString))
 {
     throw new InvalidOperationException(
         "No se encontró la cadena de conexión 'DefaultConnection'."
     );
 }
 
-
 builder.Services.AddDbContext<ApplicationDbContext>(
     options =>
         options.UseMySql(
             connectionString,
-            ServerVersion.AutoDetect(connectionString)
+            ServerVersion.AutoDetect(
+                connectionString
+            )
         )
 );
-
 
 builder.Services
     .AddAuthentication(options =>
@@ -56,14 +53,11 @@ builder.Services
         esquemaAutenticacion,
         options =>
         {
-
-
             options.Cookie.Name =
                 "SIGEMICCookie";
 
             options.LoginPath =
                 "/Account/Login";
-
 
             options.AccessDeniedPath =
                 "/Account/AccessDenied";
@@ -71,27 +65,26 @@ builder.Services
             options.ExpireTimeSpan =
                 TimeSpan.FromHours(8);
 
-
             options.SlidingExpiration =
                 true;
 
-
             options.Cookie.HttpOnly =
                 true;
-
 
             options.Cookie.SameSite =
                 SameSiteMode.Lax;
         }
     );
 
-
 builder.Services.AddAuthorization();
 
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddScoped<PagoService>();
+
 builder.Services.AddScoped<PermisoService>();
 
-
+builder.Services.AddScoped<AuditoriaService>();
 
 var app =
     builder.Build();
@@ -101,7 +94,6 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler(
         "/Home/Error"
     );
-
 
     app.UseHsts();
 }
@@ -120,7 +112,6 @@ app.MapControllerRoute(
         "{controller=Home}/{action=Index}/{id?}"
 );
 
-
 using (
     var scope =
         app.Services.CreateScope()
@@ -129,7 +120,6 @@ using (
     var services =
         scope.ServiceProvider;
 
-
     try
     {
         var context =
@@ -137,7 +127,6 @@ using (
                 .GetRequiredService<
                     ApplicationDbContext
                 >();
-
 
         await DbInitializer
             .InicializarAsync(
@@ -152,16 +141,13 @@ using (
                     ILogger<Program>
                 >();
 
-
         logger.LogError(
             ex,
             "Ocurrió un error al inicializar la base de datos de SIGEMIC."
         );
 
-
         throw;
     }
 }
-
 
 app.Run();

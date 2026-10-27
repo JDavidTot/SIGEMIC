@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using SIGEMIC.Data;
 using SIGEMIC.Models;
 using SIGEMIC.Security;
+using SIGEMIC.Services;
 
 namespace SIGEMIC.Controllers
 {
@@ -14,10 +15,17 @@ namespace SIGEMIC.Controllers
     public class ClientesController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly AuditoriaService _auditoriaService;
+        private readonly ILogger<ClientesController> _logger;
 
-        public ClientesController(ApplicationDbContext context)
+        public ClientesController(
+            ApplicationDbContext context,
+            AuditoriaService auditoriaService,
+            ILogger<ClientesController> logger)
         {
             _context = context;
+            _auditoriaService = auditoriaService;
+            _logger = logger;
         }
 
         [PermisoAuthorize("CLIENTES_VER")]
@@ -39,10 +47,14 @@ namespace SIGEMIC.Controllers
                 .Include(c => c.Usuario)
                 .Include(c => c.Creditos)
                     .ThenInclude(cr => cr.PlanCredito)
-                .FirstOrDefaultAsync(c => c.IdCliente == id);
+                .FirstOrDefaultAsync(c =>
+                    c.IdCliente == id
+                );
 
             if (cliente == null)
+            {
                 return NotFound();
+            }
 
             return View(cliente);
         }
@@ -57,13 +69,19 @@ namespace SIGEMIC.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [PermisoAuthorize("CLIENTES_CREAR")]
-        public async Task<IActionResult> Create(CrearClienteViewModel model)
+        public async Task<IActionResult> Create(
+            CrearClienteViewModel model)
         {
             if (!ModelState.IsValid)
+            {
                 return View(model);
+            }
 
-            bool existeUsuario = await _context.Usuarios.AnyAsync(u =>
-                u.Username == model.Username.Trim());
+            bool existeUsuario =
+                await _context.Usuarios.AnyAsync(u =>
+                    u.Username ==
+                    model.Username.Trim()
+                );
 
             if (existeUsuario)
             {
@@ -71,15 +89,21 @@ namespace SIGEMIC.Controllers
                     nameof(model.Username),
                     "El nombre de usuario ya existe."
                 );
+
                 return View(model);
             }
 
-            byte[] dpiHash = SHA256.HashData(
-                Encoding.UTF8.GetBytes(model.Dpi.Trim())
-            );
+            byte[] dpiHash =
+                SHA256.HashData(
+                    Encoding.UTF8.GetBytes(
+                        model.Dpi.Trim()
+                    )
+                );
 
-            bool existeDpi = await _context.Clientes.AnyAsync(c =>
-                c.DpiHash == dpiHash);
+            bool existeDpi =
+                await _context.Clientes.AnyAsync(c =>
+                    c.DpiHash == dpiHash
+                );
 
             if (existeDpi)
             {
@@ -87,33 +111,53 @@ namespace SIGEMIC.Controllers
                     nameof(model.Dpi),
                     "Ya existe un cliente registrado con este DPI."
                 );
+
                 return View(model);
             }
 
             await using var transaction =
-                await _context.Database.BeginTransactionAsync();
+                await _context.Database
+                    .BeginTransactionAsync();
 
             try
             {
                 var usuario = new Usuario
                 {
-                    Nombres = model.Nombres.Trim(),
-                    Apellidos = model.Apellidos.Trim(),
-                    Username = model.Username.Trim(),
-                    Rol = "CLIENTE",
-                    Estado = "ACTIVO",
-                    IntentosFallidos = 0,
-                    FechaCreacion = DateTime.Now
+                    Nombres =
+                        model.Nombres.Trim(),
+
+                    Apellidos =
+                        model.Apellidos.Trim(),
+
+                    Username =
+                        model.Username.Trim(),
+
+                    Rol =
+                        "CLIENTE",
+
+                    Estado =
+                        "ACTIVO",
+
+                    IntentosFallidos =
+                        0,
+
+                    FechaCreacion =
+                        DateTime.Now
                 };
 
-                var hasher = new PasswordHasher<Usuario>();
+                var hasher =
+                    new PasswordHasher<Usuario>();
 
-                usuario.PasswordHash = hasher.HashPassword(
-                    usuario,
-                    model.Password
+                usuario.PasswordHash =
+                    hasher.HashPassword(
+                        usuario,
+                        model.Password
+                    );
+
+                _context.Usuarios.Add(
+                    usuario
                 );
 
-                _context.Usuarios.Add(usuario);
                 await _context.SaveChangesAsync();
 
                 string codigoCliente =
@@ -121,47 +165,87 @@ namespace SIGEMIC.Controllers
 
                 var cliente = new Cliente
                 {
-                    IdUsuario = usuario.IdUsuario,
-                    CodigoCliente = codigoCliente,
-                    DpiCifrado = Encoding.UTF8.GetBytes(
-                        model.Dpi.Trim()
-                    ),
-                    DpiHash = dpiHash,
-                    FechaNacimiento = model.FechaNacimiento,
+                    IdUsuario =
+                        usuario.IdUsuario,
+
+                    CodigoCliente =
+                        codigoCliente,
+
+                    DpiCifrado =
+                        Encoding.UTF8.GetBytes(
+                            model.Dpi.Trim()
+                        ),
+
+                    DpiHash =
+                        dpiHash,
+
+                    FechaNacimiento =
+                        model.FechaNacimiento,
+
                     DireccionCifrada =
-                        string.IsNullOrWhiteSpace(model.Direccion)
+                        string.IsNullOrWhiteSpace(
+                            model.Direccion
+                        )
                             ? null
                             : Encoding.UTF8.GetBytes(
                                 model.Direccion.Trim()
                             ),
+
                     TelefonoCifrado =
-                        string.IsNullOrWhiteSpace(model.Telefono)
+                        string.IsNullOrWhiteSpace(
+                            model.Telefono
+                        )
                             ? null
                             : Encoding.UTF8.GetBytes(
                                 model.Telefono.Trim()
                             ),
-                    Profesion = model.Profesion?.Trim(),
-                    LugarTrabajo = model.LugarTrabajo?.Trim(),
-                    IngresoMensual = model.IngresoMensual,
-                    FechaRegistro = DateTime.Now,
-                    Estado = "ACTIVO"
+
+                    Profesion =
+                        model.Profesion?.Trim(),
+
+                    LugarTrabajo =
+                        model.LugarTrabajo?.Trim(),
+
+                    IngresoMensual =
+                        model.IngresoMensual,
+
+                    FechaRegistro =
+                        DateTime.Now,
+
+                    Estado =
+                        "ACTIVO"
                 };
 
-                _context.Clientes.Add(cliente);
+                _context.Clientes.Add(
+                    cliente
+                );
+
                 await _context.SaveChangesAsync();
 
                 await transaction.CommitAsync();
 
+                await RegistrarAuditoriaSeguroAsync(
+                    "CLIENTE_CREADO",
+                    "clientes",
+                    cliente.IdCliente.ToString(),
+                    $"Cliente {cliente.CodigoCliente} creado. " +
+                    $"Usuario: {usuario.Username}."
+                );
+
                 TempData["MensajeExito"] =
                     $"Cliente {cliente.CodigoCliente} creado correctamente.";
 
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(
+                    nameof(Index)
+                );
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
 
-                Console.WriteLine(ex.ToString());
+                Console.WriteLine(
+                    ex.ToString()
+                );
 
                 ModelState.AddModelError(
                     string.Empty,
@@ -174,40 +258,70 @@ namespace SIGEMIC.Controllers
 
         [HttpGet]
         [PermisoAuthorize("CLIENTES_EDITAR")]
-        public async Task<IActionResult> Edit(uint id)
+        public async Task<IActionResult> Edit(
+            uint id)
         {
-            var cliente = await _context.Clientes
-                .Include(c => c.Usuario)
-                .FirstOrDefaultAsync(c => c.IdCliente == id);
+            var cliente =
+                await _context.Clientes
+                    .Include(c => c.Usuario)
+                    .FirstOrDefaultAsync(c =>
+                        c.IdCliente == id
+                    );
 
             if (cliente == null)
+            {
                 return NotFound();
-
-            var model = new EditarClienteViewModel
-            {
-                IdCliente = cliente.IdCliente,
-                Nombres = cliente.Usuario.Nombres,
-                Apellidos = cliente.Usuario.Apellidos,
-                Username = cliente.Usuario.Username,
-                FechaNacimiento = cliente.FechaNacimiento,
-                Profesion = cliente.Profesion,
-                LugarTrabajo = cliente.LugarTrabajo,
-                IngresoMensual = cliente.IngresoMensual,
-                Estado = cliente.Estado
-            };
-
-            if (cliente.DireccionCifrada != null)
-            {
-                model.Direccion = Encoding.UTF8.GetString(
-                    cliente.DireccionCifrada
-                );
             }
 
-            if (cliente.TelefonoCifrado != null)
+            var model =
+                new EditarClienteViewModel
+                {
+                    IdCliente =
+                        cliente.IdCliente,
+
+                    Nombres =
+                        cliente.Usuario.Nombres,
+
+                    Apellidos =
+                        cliente.Usuario.Apellidos,
+
+                    Username =
+                        cliente.Usuario.Username,
+
+                    FechaNacimiento =
+                        cliente.FechaNacimiento,
+
+                    Profesion =
+                        cliente.Profesion,
+
+                    LugarTrabajo =
+                        cliente.LugarTrabajo,
+
+                    IngresoMensual =
+                        cliente.IngresoMensual,
+
+                    Estado =
+                        cliente.Estado
+                };
+
+            if (
+                cliente.DireccionCifrada != null
+            )
             {
-                model.Telefono = Encoding.UTF8.GetString(
-                    cliente.TelefonoCifrado
-                );
+                model.Direccion =
+                    Encoding.UTF8.GetString(
+                        cliente.DireccionCifrada
+                    );
+            }
+
+            if (
+                cliente.TelefonoCifrado != null
+            )
+            {
+                model.Telefono =
+                    Encoding.UTF8.GetString(
+                        cliente.TelefonoCifrado
+                    );
             }
 
             return View(model);
@@ -221,22 +335,34 @@ namespace SIGEMIC.Controllers
             EditarClienteViewModel model)
         {
             if (id != model.IdCliente)
+            {
                 return BadRequest();
+            }
 
             if (!ModelState.IsValid)
+            {
                 return View(model);
+            }
 
-            var cliente = await _context.Clientes
-                .Include(c => c.Usuario)
-                .FirstOrDefaultAsync(c => c.IdCliente == id);
+            var cliente =
+                await _context.Clientes
+                    .Include(c => c.Usuario)
+                    .FirstOrDefaultAsync(c =>
+                        c.IdCliente == id
+                    );
 
             if (cliente == null)
+            {
                 return NotFound();
+            }
 
             bool usuarioDuplicado =
                 await _context.Usuarios.AnyAsync(u =>
-                    u.Username == model.Username.Trim() &&
-                    u.IdUsuario != cliente.IdUsuario);
+                    u.Username ==
+                        model.Username.Trim() &&
+                    u.IdUsuario !=
+                        cliente.IdUsuario
+                );
 
             if (usuarioDuplicado)
             {
@@ -244,59 +370,222 @@ namespace SIGEMIC.Controllers
                     nameof(model.Username),
                     "El nombre de usuario ya está siendo utilizado."
                 );
+
                 return View(model);
             }
 
+            string? direccionAnterior =
+                cliente.DireccionCifrada == null
+                    ? null
+                    : Encoding.UTF8.GetString(
+                        cliente.DireccionCifrada
+                    );
+
+            string? telefonoAnterior =
+                cliente.TelefonoCifrado == null
+                    ? null
+                    : Encoding.UTF8.GetString(
+                        cliente.TelefonoCifrado
+                    );
+
+            string nombresNuevo =
+                model.Nombres.Trim();
+
+            string apellidosNuevo =
+                model.Apellidos.Trim();
+
+            string usernameNuevo =
+                model.Username.Trim();
+
+            string? direccionNueva =
+                NormalizarTexto(
+                    model.Direccion
+                );
+
+            string? telefonoNuevo =
+                NormalizarTexto(
+                    model.Telefono
+                );
+
+            string? profesionNueva =
+                NormalizarTexto(
+                    model.Profesion
+                );
+
+            string? lugarTrabajoNuevo =
+                NormalizarTexto(
+                    model.LugarTrabajo
+                );
+
+            var cambios =
+                new List<string>();
+
+
+            // ==========================================
+            // DETECTAR CAMBIOS
+            // ==========================================
+
+            AgregarCambio(
+                cambios,
+                "Nombres",
+                cliente.Usuario.Nombres,
+                nombresNuevo
+            );
+
+            AgregarCambio(
+                cambios,
+                "Apellidos",
+                cliente.Usuario.Apellidos,
+                apellidosNuevo
+            );
+
+            AgregarCambio(
+                cambios,
+                "Usuario",
+                cliente.Usuario.Username,
+                usernameNuevo
+            );
+
+            AgregarCambio(
+                cambios,
+                "Fecha de nacimiento",
+                FormatearFecha(
+                    cliente.FechaNacimiento
+                ),
+                FormatearFecha(
+                    model.FechaNacimiento
+                )
+            );
+
+            AgregarCambioProtegido(
+                cambios,
+                "Dirección",
+                direccionAnterior,
+                direccionNueva
+            );
+
+            AgregarCambioProtegido(
+                cambios,
+                "Teléfono",
+                telefonoAnterior,
+                telefonoNuevo
+            );
+
+            AgregarCambio(
+                cambios,
+                "Profesión",
+                cliente.Profesion,
+                profesionNueva
+            );
+
+            AgregarCambio(
+                cambios,
+                "Lugar de trabajo",
+                cliente.LugarTrabajo,
+                lugarTrabajoNuevo
+            );
+
+            AgregarCambio(
+                cambios,
+                "Ingreso mensual",
+                FormatearMonto(
+                    cliente.IngresoMensual
+                ),
+                FormatearMonto(
+                    model.IngresoMensual
+                )
+            );
+
+
             try
             {
+                // ======================================
+                // ACTUALIZAR
+                // ======================================
+
                 cliente.Usuario.Nombres =
-                    model.Nombres.Trim();
+                    nombresNuevo;
 
                 cliente.Usuario.Apellidos =
-                    model.Apellidos.Trim();
+                    apellidosNuevo;
 
                 cliente.Usuario.Username =
-                    model.Username.Trim();
+                    usernameNuevo;
 
                 cliente.FechaNacimiento =
                     model.FechaNacimiento;
 
                 cliente.DireccionCifrada =
-                    string.IsNullOrWhiteSpace(model.Direccion)
+                    direccionNueva == null
                         ? null
                         : Encoding.UTF8.GetBytes(
-                            model.Direccion.Trim()
+                            direccionNueva
                         );
 
                 cliente.TelefonoCifrado =
-                    string.IsNullOrWhiteSpace(model.Telefono)
+                    telefonoNuevo == null
                         ? null
                         : Encoding.UTF8.GetBytes(
-                            model.Telefono.Trim()
+                            telefonoNuevo
                         );
 
                 cliente.Profesion =
-                    model.Profesion?.Trim();
+                    profesionNueva;
 
                 cliente.LugarTrabajo =
-                    model.LugarTrabajo?.Trim();
+                    lugarTrabajoNuevo;
 
                 cliente.IngresoMensual =
                     model.IngresoMensual;
 
+
                 await _context.SaveChangesAsync();
+
+
+                // ======================================
+                // DESCRIPCIÓN AUDITORÍA
+                // ======================================
+
+                string descripcion;
+
+                if (cambios.Count == 0)
+                {
+                    descripcion =
+                        $"Cliente {cliente.CodigoCliente} actualizado. " +
+                        "No se detectaron cambios en los datos editables.";
+                }
+                else
+                {
+                    descripcion =
+                        $"Cliente {cliente.CodigoCliente} actualizado. " +
+                        $"Cambios: {string.Join("; ", cambios)}.";
+                }
+
+
+                await RegistrarAuditoriaSeguroAsync(
+                    "CLIENTE_EDITADO",
+                    "clientes",
+                    cliente.IdCliente.ToString(),
+                    descripcion
+                );
+
 
                 TempData["MensajeExito"] =
                     "Cliente actualizado correctamente.";
 
                 return RedirectToAction(
                     nameof(Details),
-                    new { id = cliente.IdCliente }
+                    new
+                    {
+                        id = cliente.IdCliente
+                    }
                 );
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
+                Console.WriteLine(
+                    ex.ToString()
+                );
 
                 ModelState.AddModelError(
                     string.Empty,
@@ -309,28 +598,45 @@ namespace SIGEMIC.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [PermisoAuthorize("CLIENTES_CAMBIAR_ESTADO")]
-        public async Task<IActionResult> CambiarEstado(uint id)
+        [PermisoAuthorize(
+            "CLIENTES_CAMBIAR_ESTADO"
+        )]
+        public async Task<IActionResult> CambiarEstado(
+            uint id)
         {
-            var cliente = await _context.Clientes
-                .Include(c => c.Usuario)
-                .FirstOrDefaultAsync(c => c.IdCliente == id);
+            var cliente =
+                await _context.Clientes
+                    .Include(c => c.Usuario)
+                    .FirstOrDefaultAsync(c =>
+                        c.IdCliente == id
+                    );
 
             if (cliente == null)
+            {
                 return NotFound();
+            }
+
+            string estadoAnterior =
+                cliente.Estado;
 
             if (cliente.Estado == "ACTIVO")
             {
-                cliente.Estado = "INACTIVO";
-                cliente.Usuario.Estado = "INACTIVO";
+                cliente.Estado =
+                    "INACTIVO";
+
+                cliente.Usuario.Estado =
+                    "INACTIVO";
 
                 TempData["MensajeExito"] =
                     "Cliente inactivado correctamente.";
             }
             else
             {
-                cliente.Estado = "ACTIVO";
-                cliente.Usuario.Estado = "ACTIVO";
+                cliente.Estado =
+                    "ACTIVO";
+
+                cliente.Usuario.Estado =
+                    "ACTIVO";
 
                 TempData["MensajeExito"] =
                     "Cliente activado correctamente.";
@@ -338,7 +644,197 @@ namespace SIGEMIC.Controllers
 
             await _context.SaveChangesAsync();
 
-            return RedirectToAction(nameof(Index));
+            await RegistrarAuditoriaSeguroAsync(
+                "CLIENTE_ESTADO_CAMBIADO",
+                "clientes",
+                cliente.IdCliente.ToString(),
+
+                $"Cliente {cliente.CodigoCliente} actualizado. " +
+                $"Cambios: Estado: " +
+                $"{MostrarValor(estadoAnterior)} → " +
+                $"{MostrarValor(cliente.Estado)}."
+            );
+
+            return RedirectToAction(
+                nameof(Index)
+            );
+        }
+
+
+        // ==============================================
+        // AUDITORÍA SEGURA
+        // ==============================================
+
+        private async Task RegistrarAuditoriaSeguroAsync(
+            string accion,
+            string tablaAfectada,
+            string registroAfectado,
+            string descripcion)
+        {
+            try
+            {
+                await _auditoriaService
+                    .RegistrarUsuarioActualAsync(
+                        accion,
+                        tablaAfectada,
+                        registroAfectado,
+                        descripcion,
+                        "EXITOSO"
+                    );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "No fue posible registrar la auditoría de la acción {Accion}.",
+                    accion
+                );
+            }
+        }
+
+
+        // ==============================================
+        // DETECTAR CAMBIOS NORMALES
+        // ==============================================
+
+        private static void AgregarCambio(
+            ICollection<string> cambios,
+            string campo,
+            string? valorAnterior,
+            string? valorNuevo)
+        {
+            string anterior =
+                NormalizarParaComparar(
+                    valorAnterior
+                );
+
+            string nuevo =
+                NormalizarParaComparar(
+                    valorNuevo
+                );
+
+            if (
+                string.Equals(
+                    anterior,
+                    nuevo,
+                    StringComparison.Ordinal
+                )
+            )
+            {
+                return;
+            }
+
+            cambios.Add(
+                $"{campo}: " +
+                $"{MostrarValor(valorAnterior)} → " +
+                $"{MostrarValor(valorNuevo)}"
+            );
+        }
+
+
+        // ==============================================
+        // CAMBIOS EN DATOS SENSIBLES
+        // ==============================================
+
+        private static void AgregarCambioProtegido(
+            ICollection<string> cambios,
+            string campo,
+            string? valorAnterior,
+            string? valorNuevo)
+        {
+            string anterior =
+                NormalizarParaComparar(
+                    valorAnterior
+                );
+
+            string nuevo =
+                NormalizarParaComparar(
+                    valorNuevo
+                );
+
+            if (
+                string.Equals(
+                    anterior,
+                    nuevo,
+                    StringComparison.Ordinal
+                )
+            )
+            {
+                return;
+            }
+
+            string estadoAnterior =
+                string.IsNullOrWhiteSpace(
+                    valorAnterior
+                )
+                    ? "Sin dato"
+                    : "Dato registrado";
+
+            string estadoNuevo =
+                string.IsNullOrWhiteSpace(
+                    valorNuevo
+                )
+                    ? "Sin dato"
+                    : "Dato actualizado";
+
+            cambios.Add(
+                $"{campo}: " +
+                $"{estadoAnterior} → " +
+                $"{estadoNuevo}"
+            );
+        }
+
+
+        // ==============================================
+        // UTILIDADES
+        // ==============================================
+
+        private static string? NormalizarTexto(
+            string? valor)
+        {
+            return string.IsNullOrWhiteSpace(
+                valor
+            )
+                ? null
+                : valor.Trim();
+        }
+
+        private static string NormalizarParaComparar(
+            string? valor)
+        {
+            return string.IsNullOrWhiteSpace(
+                valor
+            )
+                ? string.Empty
+                : valor.Trim();
+        }
+
+        private static string MostrarValor(
+            string? valor)
+        {
+            return string.IsNullOrWhiteSpace(
+                valor
+            )
+                ? "Sin dato"
+                : valor.Trim();
+        }
+
+        private static string FormatearFecha(
+            DateTime? fecha)
+        {
+            return fecha.HasValue
+                ? fecha.Value.ToString(
+                    "dd/MM/yyyy"
+                )
+                : "Sin dato";
+        }
+
+        private static string FormatearMonto(
+            decimal? monto)
+        {
+            return monto.HasValue
+                ? $"Q{monto.Value:N2}"
+                : "Sin dato";
         }
     }
 }

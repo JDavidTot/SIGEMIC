@@ -7,185 +7,207 @@
 <div class="container mt-4">
 
     <div class="mb-4">
-
-        <h2>
-            Abono extraordinario a capital
-        </h2>
-
+        <h2>Abono extraordinario a capital</h2>
         <p class="text-muted">
             El abono reducirá directamente el saldo del crédito
             y disminuirá el plazo restante.
         </p>
-
     </div>
 
     <div class="card shadow-sm">
-
         <div class="card-body">
 
             <form asp-action="AbonoExtraordinario"
-                  method="post">
+                  method="post"
+                  enctype="multipart/form-data">
 
                 @Html.AntiForgeryToken()
 
-                <input asp-for="IdCredito"
-                       type="hidden" />
+                <input asp-for="IdCredito" type="hidden" />
 
                 <div asp-validation-summary="ModelOnly"
-                     class="text-danger mb-3">
-                </div>
+                     class="text-danger mb-3"></div>
 
                 <div class="row">
-
                     <div class="col-md-6 mb-3">
-
-                        <label class="form-label">
-                            Cliente
-                        </label>
-
+                        <label class="form-label">Cliente</label>
                         <input value="@Model.Cliente"
                                class="form-control"
                                readonly />
-
                     </div>
 
                     <div class="col-md-6 mb-3">
-
-                        <label class="form-label">
-                            Crédito
-                        </label>
-
+                        <label class="form-label">Crédito</label>
                         <input value="@Model.CodigoCredito"
                                class="form-control"
                                readonly />
-
                     </div>
-
                 </div>
 
                 <div class="row">
-
                     <div class="col-md-4 mb-3">
-
-                        <label class="form-label">
-                            Saldo de capital
-                        </label>
-
+                        <label class="form-label">Saldo de capital</label>
                         <input value="Q @Model.SaldoCapital.ToString("N2")"
                                class="form-control fw-bold"
                                readonly />
-
                     </div>
 
                     <div class="col-md-4 mb-3">
-
-                        <label class="form-label">
-                            Cuota actual
-                        </label>
-
+                        <label class="form-label">Cuota actual</label>
                         <input value="Q @Model.CuotaActual.ToString("N2")"
                                class="form-control"
                                readonly />
-
                     </div>
 
                     <div class="col-md-4 mb-3">
-
-                        <label class="form-label">
-                            Plazo original
-                        </label>
-
+                        <label class="form-label">Plazo original</label>
                         <input value="@Model.PlazoOriginal meses"
                                class="form-control"
                                readonly />
-
                     </div>
-
                 </div>
 
                 <hr />
 
                 <div class="row">
-
                     <div class="col-md-6 mb-3">
-
-                        <label asp-for="MontoAbono"
-                               class="form-label">
-                        </label>
+                        <label asp-for="MontoAbono" class="form-label"></label>
 
                         <div class="input-group">
-
-                            <span class="input-group-text">
-                                Q
-                            </span>
-
+                            <span class="input-group-text">Q</span>
                             <input asp-for="MontoAbono"
                                    type="number"
                                    step="0.01"
                                    min="0.01"
                                    max="@Model.SaldoCapital"
                                    class="form-control" />
-
                         </div>
 
                         <span asp-validation-for="MontoAbono"
-                              class="text-danger">
-                        </span>
-
+                              class="text-danger"></span>
                     </div>
 
                     <div class="col-md-6 mb-3">
-
-                        <label asp-for="IdFormaPago"
-                               class="form-label">
-                        </label>
+                        <label asp-for="IdFormaPago" class="form-label"></label>
 
                         <select asp-for="IdFormaPago"
                                 asp-items="Model.FormasPago"
+                                id="formaPago"
                                 class="form-select">
-
                             <option value="">
                                 Seleccione una forma de pago
                             </option>
-
                         </select>
 
                         <span asp-validation-for="IdFormaPago"
-                              class="text-danger">
-                        </span>
+                              class="text-danger"></span>
+                    </div>
+                </div>
 
+                <div id="datosBancarios"
+                     class="border rounded p-3 mb-3 bg-light"
+                     style="display:none;">
+
+                    <h5 class="mb-1">Datos del comprobante</h5>
+                    <p class="text-muted small mb-3">
+                        Obligatorio para transferencia o depósito.
+                    </p>
+
+                    <div class="mb-3">
+                        <label asp-for="IdBanco" class="form-label"></label>
+
+                        <select asp-for="IdBanco"
+                                id="banco"
+                                class="form-select">
+                            <option value="">Seleccione un banco</option>
+
+                            @foreach (var banco in Model.Bancos)
+                            {
+                                <option value="@banco.IdBanco"
+                                        data-cuenta="@banco.NumeroCuenta"
+                                        data-tipo="@banco.TipoCuenta"
+                                        data-beneficiario="@banco.Beneficiario">
+                                    @banco.Nombre
+                                </option>
+                            }
+                        </select>
+
+                        <span asp-validation-for="IdBanco"
+                              class="text-danger"></span>
                     </div>
 
+                    <div id="infoBanco"
+                         class="alert alert-secondary"
+                         style="display:none;">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <small class="text-muted d-block">Número de cuenta</small>
+                                <strong id="numeroCuenta">-</strong>
+                            </div>
+
+                            <div class="col-md-4">
+                                <small class="text-muted d-block">Tipo de cuenta</small>
+                                <strong id="tipoCuenta">-</strong>
+                            </div>
+
+                            <div class="col-md-4">
+                                <small class="text-muted d-block">Beneficiario</small>
+                                <strong id="beneficiario">-</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="NumeroBoleta" class="form-label"></label>
+                            <input asp-for="NumeroBoleta"
+                                   id="numeroBoleta"
+                                   class="form-control"
+                                   autocomplete="off"
+                                   placeholder="Ej. 458796321" />
+
+                            <span asp-validation-for="NumeroBoleta"
+                                  class="text-danger"></span>
+
+                            <small class="text-muted">
+                                La misma boleta no puede registrarse dos veces en el mismo banco.
+                            </small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Comprobante" class="form-label"></label>
+                            <input asp-for="Comprobante"
+                                   id="comprobante"
+                                   type="file"
+                                   accept=".jpg,.jpeg,.png,.pdf"
+                                   class="form-control" />
+
+                            <span asp-validation-for="Comprobante"
+                                  class="text-danger"></span>
+
+                            <small class="text-muted">
+                                JPG, JPEG, PNG o PDF. Máximo 5 MB.
+                            </small>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="mb-3">
-
-                    <label asp-for="Observacion"
-                           class="form-label">
-                    </label>
-
+                    <label asp-for="Observacion" class="form-label"></label>
                     <textarea asp-for="Observacion"
                               rows="3"
-                              class="form-control">
-                    </textarea>
-
+                              class="form-control"></textarea>
                 </div>
 
                 <div class="alert alert-info">
-
-                    <strong>
-                        ¿Qué hará SIGEMIC?
-                    </strong>
-
+                    <strong>¿Qué hará SIGEMIC?</strong>
                     El monto será aplicado completamente a capital.
                     Se mantendrá aproximadamente la misma cuota mensual
                     y se reducirán las cuotas futuras que ya no sean
                     necesarias, disminuyendo el plazo del crédito.
-
                 </div>
 
                 <div class="d-flex gap-2">
-
                     <button type="submit"
                             class="btn btn-success">
                         Registrar abono
@@ -196,21 +218,83 @@
                        class="btn btn-secondary">
                         Cancelar
                     </a>
-
                 </div>
-
             </form>
-
         </div>
     </div>
-
 </div>
 
 @section Scripts
 {
     @{
-        await Html.RenderPartialAsync(
-            "_ValidationScriptsPartial"
-        );
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const formaPago = document.getElementById("formaPago");
+            const datosBancarios = document.getElementById("datosBancarios");
+            const banco = document.getElementById("banco");
+            const infoBanco = document.getElementById("infoBanco");
+            const numeroCuenta = document.getElementById("numeroCuenta");
+            const tipoCuenta = document.getElementById("tipoCuenta");
+            const beneficiario = document.getElementById("beneficiario");
+            const numeroBoleta = document.getElementById("numeroBoleta");
+            const comprobante = document.getElementById("comprobante");
+
+            function requiereDatosBancarios() {
+                if (!formaPago || formaPago.selectedIndex < 0) {
+                    return false;
+                }
+
+                const texto = formaPago.options[formaPago.selectedIndex]
+                    .text
+                    .trim()
+                    .toUpperCase();
+
+                return texto === "TRANSFERENCIA" || texto === "DEPOSITO";
+            }
+
+            function actualizarFormaPago() {
+                const requiere = requiereDatosBancarios();
+
+                datosBancarios.style.display = requiere ? "block" : "none";
+
+                banco.required = requiere;
+                numeroBoleta.required = requiere;
+                comprobante.required = requiere;
+
+                if (!requiere) {
+                    banco.value = "";
+                    numeroBoleta.value = "";
+                    comprobante.value = "";
+                    infoBanco.style.display = "none";
+                } else {
+                    actualizarBanco();
+                }
+            }
+
+            function actualizarBanco() {
+                const opcion = banco.options[banco.selectedIndex];
+
+                if (!opcion || !opcion.value) {
+                    infoBanco.style.display = "none";
+                    numeroCuenta.textContent = "-";
+                    tipoCuenta.textContent = "-";
+                    beneficiario.textContent = "-";
+                    return;
+                }
+
+                numeroCuenta.textContent = opcion.dataset.cuenta || "-";
+                tipoCuenta.textContent = opcion.dataset.tipo || "-";
+                beneficiario.textContent = opcion.dataset.beneficiario || "-";
+                infoBanco.style.display = "block";
+            }
+
+            formaPago.addEventListener("change", actualizarFormaPago);
+            banco.addEventListener("change", actualizarBanco);
+
+            actualizarFormaPago();
+        });
+    </script>
 }

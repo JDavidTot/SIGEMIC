@@ -44,5 +44,8 @@ namespace SIGEMIC.Models
 
         public ICollection<SolicitudPago> SolicitudesPago { get; set; }
             = new List<SolicitudPago>();
+
+        public ICollection<Pago> Pagos { get; set; }
+            = new List<Pago>();
     }
 }

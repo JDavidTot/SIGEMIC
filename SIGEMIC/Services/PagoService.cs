@@ -26,7 +26,11 @@ namespace SIGEMIC.Services
                 decimal montoRecibido,
                 uint idUsuario,
                 uint idFormaPago,
-                string? observacion = null)
+                string? observacion = null,
+                uint? idBanco = null,
+                string? numeroBoleta = null,
+                string? archivoComprobante = null,
+                ulong? idSolicitudOrigen = null)
         {
             IDbContextTransaction? transaccionPropia =
                 null;
@@ -131,6 +135,37 @@ namespace SIGEMIC.Services
                     return ResultadoPagoService.Error(
                         "La forma de pago seleccionada no es válida."
                     );
+                }
+
+
+                var validacionBancaria =
+                    await ValidarDatosBancariosAsync(
+                        formaPago.Nombre,
+                        idBanco,
+                        numeroBoleta,
+                        archivoComprobante,
+                        idSolicitudOrigen
+                    );
+
+
+                if (!validacionBancaria.Exito)
+                {
+                    return ResultadoPagoService.Error(
+                        validacionBancaria.Mensaje
+                    );
+                }
+
+
+                if (!validacionBancaria.RequiereDatosBancarios)
+                {
+                    idBanco = null;
+                    numeroBoleta = null;
+                    archivoComprobante = null;
+                }
+                else
+                {
+                    numeroBoleta =
+                        numeroBoleta!.Trim();
                 }
 
 
@@ -408,6 +443,15 @@ namespace SIGEMIC.Services
                         IdFormaPago =
                             idFormaPago,
 
+                        IdBanco =
+                            idBanco,
+
+                        NumeroBoleta =
+                            numeroBoleta,
+
+                        ArchivoComprobante =
+                            archivoComprobante,
+
                         NumeroRecibo =
                             CrearReciboTemporal(),
 
@@ -509,7 +553,11 @@ namespace SIGEMIC.Services
                 decimal montoAbono,
                 uint idUsuario,
                 uint idFormaPago,
-                string? observacion = null)
+                string? observacion = null,
+                uint? idBanco = null,
+                string? numeroBoleta = null,
+                string? archivoComprobante = null,
+                ulong? idSolicitudOrigen = null)
         {
             IDbContextTransaction? transaccionPropia =
                 null;
@@ -605,6 +653,37 @@ namespace SIGEMIC.Services
                     return ResultadoPagoService.Error(
                         "La forma de pago seleccionada no es válida."
                     );
+                }
+
+
+                var validacionBancaria =
+                    await ValidarDatosBancariosAsync(
+                        formaPago.Nombre,
+                        idBanco,
+                        numeroBoleta,
+                        archivoComprobante,
+                        idSolicitudOrigen
+                    );
+
+
+                if (!validacionBancaria.Exito)
+                {
+                    return ResultadoPagoService.Error(
+                        validacionBancaria.Mensaje
+                    );
+                }
+
+
+                if (!validacionBancaria.RequiereDatosBancarios)
+                {
+                    idBanco = null;
+                    numeroBoleta = null;
+                    archivoComprobante = null;
+                }
+                else
+                {
+                    numeroBoleta =
+                        numeroBoleta!.Trim();
                 }
 
 
@@ -1013,6 +1092,15 @@ namespace SIGEMIC.Services
                         IdFormaPago =
                             idFormaPago,
 
+                        IdBanco =
+                            idBanco,
+
+                        NumeroBoleta =
+                            numeroBoleta,
+
+                        ArchivoComprobante =
+                            archivoComprobante,
+
                         NumeroRecibo =
                             CrearReciboTemporal(),
 
@@ -1102,6 +1190,145 @@ namespace SIGEMIC.Services
 
 
         // =====================================================
+        // VALIDAR DATOS BANCARIOS
+        //
+        // EFECTIVO:
+        //   No requiere banco, boleta ni comprobante.
+        //
+        // TRANSFERENCIA / DEPOSITO:
+        //   Requiere banco activo, boleta y comprobante.
+        //   La combinación banco + boleta no puede repetirse
+        //   en pagos ni en solicitudes de pago.
+        // =====================================================
+
+        private async Task<ValidacionBancariaPago>
+            ValidarDatosBancariosAsync(
+                string formaPago,
+                uint? idBanco,
+                string? numeroBoleta,
+                string? archivoComprobante,
+                ulong? idSolicitudOrigen)
+        {
+            string formaNormalizada =
+                (formaPago ?? string.Empty)
+                    .Trim()
+                    .ToUpperInvariant();
+
+
+            bool requiereDatosBancarios =
+                formaNormalizada == "TRANSFERENCIA" ||
+                formaNormalizada == "DEPOSITO";
+
+
+            if (!requiereDatosBancarios)
+            {
+                return ValidacionBancariaPago.Ok(
+                    requiereDatosBancarios: false
+                );
+            }
+
+
+            if (!idBanco.HasValue)
+            {
+                return ValidacionBancariaPago.Error(
+                    "Debe seleccionar el banco utilizado."
+                );
+            }
+
+
+            string boleta =
+                numeroBoleta?.Trim()
+                ?? string.Empty;
+
+
+            if (string.IsNullOrWhiteSpace(boleta))
+            {
+                return ValidacionBancariaPago.Error(
+                    "Debe ingresar el número de boleta o comprobante."
+                );
+            }
+
+
+            if (boleta.Length > 100)
+            {
+                return ValidacionBancariaPago.Error(
+                    "El número de boleta no puede superar los 100 caracteres."
+                );
+            }
+
+
+            if (string.IsNullOrWhiteSpace(
+                archivoComprobante
+            ))
+            {
+                return ValidacionBancariaPago.Error(
+                    "Debe adjuntar el comprobante del depósito o transferencia."
+                );
+            }
+
+
+            bool bancoValido =
+                await _context.Bancos
+                    .AsNoTracking()
+                    .AnyAsync(b =>
+                        b.IdBanco == idBanco.Value &&
+                        b.Estado == "ACTIVO"
+                    );
+
+
+            if (!bancoValido)
+            {
+                return ValidacionBancariaPago.Error(
+                    "El banco seleccionado no existe o está inactivo."
+                );
+            }
+
+
+            bool existeEnPagos =
+                await _context.Pagos
+                    .AsNoTracking()
+                    .AnyAsync(p =>
+                        p.IdBanco == idBanco.Value &&
+                        p.NumeroBoleta == boleta
+                    );
+
+
+            if (existeEnPagos)
+            {
+                return ValidacionBancariaPago.Error(
+                    "Ese número de boleta ya fue registrado para el banco seleccionado."
+                );
+            }
+
+
+            bool existeEnSolicitudes =
+                await _context.SolicitudesPago
+                    .AsNoTracking()
+                    .AnyAsync(s =>
+                        s.IdBanco == idBanco.Value &&
+                        s.NumeroBoleta == boleta &&
+                        (
+                            !idSolicitudOrigen.HasValue ||
+                            s.IdSolicitud != idSolicitudOrigen.Value
+                        )
+                    );
+
+
+            if (existeEnSolicitudes)
+            {
+                return ValidacionBancariaPago.Error(
+                    "Ese número de boleta ya está registrado en una solicitud de pago para el banco seleccionado."
+                );
+            }
+
+
+            return ValidacionBancariaPago.Ok(
+                requiereDatosBancarios: true
+            );
+        }
+
+
+        // =====================================================
         // CREAR RECIBO TEMPORAL
         // =====================================================
 
@@ -1109,6 +1336,40 @@ namespace SIGEMIC.Services
         {
             return
                 $"TMP-{Guid.NewGuid().ToString("N")[..20]}";
+        }
+    }
+
+
+    internal class ValidacionBancariaPago
+    {
+        public bool Exito { get; init; }
+
+        public bool RequiereDatosBancarios { get; init; }
+
+        public string Mensaje { get; init; }
+            = string.Empty;
+
+
+        public static ValidacionBancariaPago Ok(
+            bool requiereDatosBancarios)
+        {
+            return new ValidacionBancariaPago
+            {
+                Exito = true,
+                RequiereDatosBancarios =
+                    requiereDatosBancarios
+            };
+        }
+
+
+        public static ValidacionBancariaPago Error(
+            string mensaje)
+        {
+            return new ValidacionBancariaPago
+            {
+                Exito = false,
+                Mensaje = mensaje
+            };
         }
     }
 

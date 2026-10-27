@@ -22,6 +22,26 @@ namespace SIGEMIC.Models
         [Column("id_forma_pago")]
         public uint IdFormaPago { get; set; }
 
+        // =====================================================
+        // DATOS BANCARIOS
+        // Solo se utilizan para TRANSFERENCIA o DEPÓSITO.
+        // =====================================================
+
+        [Column("id_banco")]
+        public uint? IdBanco { get; set; }
+
+        [StringLength(100)]
+        [Column("numero_boleta")]
+        public string? NumeroBoleta { get; set; }
+
+        [StringLength(255)]
+        [Column("archivo_comprobante")]
+        public string? ArchivoComprobante { get; set; }
+
+        // =====================================================
+        // DATOS DEL PAGO
+        // =====================================================
+
         [Required]
         [StringLength(40)]
         [Column("numero_recibo")]
@@ -50,6 +70,10 @@ namespace SIGEMIC.Models
         [Column("observacion")]
         public string? Observacion { get; set; }
 
+        // =====================================================
+        // RELACIONES
+        // =====================================================
+
         [ForeignKey(nameof(IdCredito))]
         public Credito Credito { get; set; } = null!;
 
@@ -61,5 +85,8 @@ namespace SIGEMIC.Models
 
         [ForeignKey(nameof(IdFormaPago))]
         public FormaPago FormaPago { get; set; } = null!;
+
+        [ForeignKey(nameof(IdBanco))]
+        public Banco? Banco { get; set; }
     }
 }

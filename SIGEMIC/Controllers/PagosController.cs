@@ -15,13 +15,22 @@ namespace SIGEMIC.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly PagoService _pagoService;
+        private readonly AuditoriaService _auditoriaService;
+        private readonly IWebHostEnvironment _environment;
+        private readonly ILogger<PagosController> _logger;
 
         public PagosController(
             ApplicationDbContext context,
-            PagoService pagoService)
+            PagoService pagoService,
+            AuditoriaService auditoriaService,
+            IWebHostEnvironment environment,
+            ILogger<PagosController> logger)
         {
             _context = context;
             _pagoService = pagoService;
+            _auditoriaService = auditoriaService;
+            _environment = environment;
+            _logger = logger;
         }
 
         // =====================================================
@@ -192,8 +201,51 @@ namespace SIGEMIC.Controllers
                 return Unauthorized();
             }
 
+            string? archivoGuardado = null;
+
+            var preparacion =
+                await PrepararDatosBancariosAsync(
+                    model.IdFormaPago,
+                    model.IdBanco,
+                    model.NumeroBoleta,
+                    model.Comprobante
+                );
+
+            if (!preparacion.Exito)
+            {
+                ModelState.AddModelError(
+                    string.Empty,
+                    preparacion.MensajeError ??
+                    "No fue posible validar los datos del pago."
+                );
+
+                await CargarDatosCuota(model);
+                await CargarFormasPago(model);
+
+                return View(model);
+            }
+
+            archivoGuardado =
+                preparacion.ArchivoGuardado;
+
             try
             {
+                var cuotaAntes = await _context.Cuotas
+                    .AsNoTracking()
+                    .Include(c => c.Credito)
+                        .ThenInclude(c => c.Cliente)
+                    .FirstOrDefaultAsync(c =>
+                        c.IdCuota == model.IdCuota
+                    );
+
+                var formaPagoNombre = await _context.FormasPago
+                    .AsNoTracking()
+                    .Where(f =>
+                        f.IdFormaPago == model.IdFormaPago
+                    )
+                    .Select(f => f.Nombre)
+                    .FirstOrDefaultAsync();
+
                 var resultado =
                     await _pagoService
                         .RegistrarPagoCuotaAsync(
@@ -201,11 +253,28 @@ namespace SIGEMIC.Controllers
                             montoRecibido: model.MontoPago,
                             idUsuario: idUsuario,
                             idFormaPago: model.IdFormaPago,
-                            observacion: model.Observacion
+                            observacion: model.Observacion,
+                            idBanco: model.IdBanco,
+                            numeroBoleta: model.NumeroBoleta,
+                            archivoComprobante: archivoGuardado
                         );
 
                 if (!resultado.Exito)
                 {
+                    EliminarComprobanteSiExiste(
+                        archivoGuardado
+                    );
+
+                    await RegistrarAuditoriaSeguroAsync(
+                        "PAGO_RECHAZADO",
+                        "cuotas",
+                        model.IdCuota.ToString(),
+                        $"Intento de pago rechazado. " +
+                        $"Monto solicitado: Q{model.MontoPago:N2}. " +
+                        $"Motivo: {resultado.Mensaje}",
+                        "FALLIDO"
+                    );
+
                     ModelState.AddModelError(
                         string.Empty,
                         resultado.Mensaje
@@ -238,6 +307,54 @@ namespace SIGEMIC.Controllers
                     return View(model);
                 }
 
+                string clienteCodigo =
+                    cuotaAntes?.Credito.Cliente.CodigoCliente
+                    ?? "No disponible";
+
+                string estadoCuotaAnterior =
+                    cuotaAntes?.Estado
+                    ?? "No disponible";
+
+                string estadoCreditoAnterior =
+                    cuotaAntes?.Credito.Estado
+                    ?? "No disponible";
+
+                decimal saldoCuotaAnterior =
+                    cuotaAntes?.SaldoCuota
+                    ?? 0m;
+
+                decimal saldoCapitalAnterior =
+                    cuotaAntes?.Credito.SaldoCapital
+                    ?? 0m;
+
+                string descripcionAuditoria =
+                    $"Pago {pago.NumeroRecibo} registrado. " +
+                    $"Crédito: {credito.CodigoCredito}; " +
+                    $"Cliente: {clienteCodigo}; " +
+                    $"Cuota: #{cuota.NumeroCuota}; " +
+                    $"Forma de pago: {formaPagoNombre ?? "No disponible"}; " +
+                    $"Monto: Q{pago.MontoTotal:N2}; " +
+                    $"Capital aplicado: Q{pago.CapitalAplicado:N2}; " +
+                    $"Interés aplicado: Q{pago.InteresAplicado:N2}; " +
+                    $"Mora aplicada: Q{pago.MoraAplicada:N2}; " +
+                    CrearDetalleBancarioAuditoria(
+                        formaPagoNombre,
+                        pago.IdBanco,
+                        pago.NumeroBoleta
+                    ) +
+                    $"Cambios: " +
+                    $"Saldo de cuota: Q{saldoCuotaAnterior:N2} → Q{cuota.SaldoCuota:N2}; " +
+                    $"Estado de cuota: {estadoCuotaAnterior} → {cuota.Estado}; " +
+                    $"Saldo capital: Q{saldoCapitalAnterior:N2} → Q{credito.SaldoCapital:N2}; " +
+                    $"Estado del crédito: {estadoCreditoAnterior} → {credito.Estado}.";
+
+                await RegistrarAuditoriaSeguroAsync(
+                    "PAGO_REGISTRADO",
+                    "pagos",
+                    pago.IdPago.ToString(),
+                    descripcionAuditoria
+                );
+
                 if (cuota.Estado == "PAGADA")
                 {
                     TempData["MensajeExito"] =
@@ -262,6 +379,10 @@ namespace SIGEMIC.Controllers
             }
             catch (Exception ex)
             {
+                EliminarComprobanteSiExiste(
+                    archivoGuardado
+                );
+
                 Console.WriteLine(ex.ToString());
 
                 ModelState.AddModelError(
@@ -371,8 +492,58 @@ namespace SIGEMIC.Controllers
                 return Unauthorized();
             }
 
+            string? archivoGuardado = null;
+
+            var preparacion =
+                await PrepararDatosBancariosAsync(
+                    model.IdFormaPago,
+                    model.IdBanco,
+                    model.NumeroBoleta,
+                    model.Comprobante
+                );
+
+            if (!preparacion.Exito)
+            {
+                ModelState.AddModelError(
+                    string.Empty,
+                    preparacion.MensajeError ??
+                    "No fue posible validar los datos del abono."
+                );
+
+                await CargarDatosAbono(model);
+                await CargarFormasPagoAbono(model);
+
+                return View(model);
+            }
+
+            archivoGuardado =
+                preparacion.ArchivoGuardado;
+
             try
             {
+                var creditoAntes = await _context.Creditos
+                    .AsNoTracking()
+                    .Include(c => c.Cliente)
+                    .FirstOrDefaultAsync(c =>
+                        c.IdCredito == model.IdCredito
+                    );
+
+                int cuotasPendientesAntes =
+                    await _context.Cuotas
+                        .AsNoTracking()
+                        .CountAsync(c =>
+                            c.IdCredito == model.IdCredito &&
+                            c.Estado != "PAGADA"
+                        );
+
+                var formaPagoAbonoNombre = await _context.FormasPago
+                    .AsNoTracking()
+                    .Where(f =>
+                        f.IdFormaPago == model.IdFormaPago
+                    )
+                    .Select(f => f.Nombre)
+                    .FirstOrDefaultAsync();
+
                 var resultado =
                     await _pagoService
                         .RegistrarAbonoExtraordinarioAsync(
@@ -380,11 +551,28 @@ namespace SIGEMIC.Controllers
                             montoAbono: model.MontoAbono,
                             idUsuario: idUsuario,
                             idFormaPago: model.IdFormaPago,
-                            observacion: model.Observacion
+                            observacion: model.Observacion,
+                            idBanco: model.IdBanco,
+                            numeroBoleta: model.NumeroBoleta,
+                            archivoComprobante: archivoGuardado
                         );
 
                 if (!resultado.Exito)
                 {
+                    EliminarComprobanteSiExiste(
+                        archivoGuardado
+                    );
+
+                    await RegistrarAuditoriaSeguroAsync(
+                        "ABONO_CAPITAL_RECHAZADO",
+                        "creditos",
+                        model.IdCredito.ToString(),
+                        $"Intento de abono extraordinario rechazado. " +
+                        $"Monto solicitado: Q{model.MontoAbono:N2}. " +
+                        $"Motivo: {resultado.Mensaje}",
+                        "FALLIDO"
+                    );
+
                     ModelState.AddModelError(
                         string.Empty,
                         resultado.Mensaje
@@ -415,6 +603,54 @@ namespace SIGEMIC.Controllers
                     return View(model);
                 }
 
+                string clienteCodigoAbono =
+                    creditoAntes?.Cliente.CodigoCliente
+                    ?? "No disponible";
+
+                string estadoCreditoAnteriorAbono =
+                    creditoAntes?.Estado
+                    ?? "No disponible";
+
+                decimal saldoCapitalAnteriorAbono =
+                    creditoAntes?.SaldoCapital
+                    ?? 0m;
+
+                string fechaFinalAnterior =
+                    creditoAntes == null
+                        ? "No disponible"
+                        : creditoAntes
+                            .FechaFinalizacionEstimada
+                            .ToString("dd/MM/yyyy");
+
+                string fechaFinalNueva =
+                    credito.FechaFinalizacionEstimada
+                        .ToString("dd/MM/yyyy");
+
+                string descripcionAbono =
+                    $"Abono extraordinario {pago.NumeroRecibo} registrado. " +
+                    $"Crédito: {credito.CodigoCredito}; " +
+                    $"Cliente: {clienteCodigoAbono}; " +
+                    $"Forma de pago: {formaPagoAbonoNombre ?? "No disponible"}; " +
+                    $"Monto: Q{pago.MontoTotal:N2}; " +
+                    $"Capital aplicado: Q{pago.CapitalAplicado:N2}; " +
+                    CrearDetalleBancarioAuditoria(
+                        formaPagoAbonoNombre,
+                        pago.IdBanco,
+                        pago.NumeroBoleta
+                    ) +
+                    $"Cambios: " +
+                    $"Saldo capital: Q{saldoCapitalAnteriorAbono:N2} → Q{credito.SaldoCapital:N2}; " +
+                    $"Estado del crédito: {estadoCreditoAnteriorAbono} → {credito.Estado}; " +
+                    $"Cuotas pendientes: {cuotasPendientesAntes} → {resultado.CuotasRestantes}; " +
+                    $"Fecha final estimada: {fechaFinalAnterior} → {fechaFinalNueva}.";
+
+                await RegistrarAuditoriaSeguroAsync(
+                    "ABONO_CAPITAL_REGISTRADO",
+                    "pagos",
+                    pago.IdPago.ToString(),
+                    descripcionAbono
+                );
+
                 if (resultado.CreditoCancelado)
                 {
                     TempData["MensajeExito"] =
@@ -441,6 +677,10 @@ namespace SIGEMIC.Controllers
             }
             catch (Exception ex)
             {
+                EliminarComprobanteSiExiste(
+                    archivoGuardado
+                );
+
                 Console.WriteLine(
                     ex.ToString()
                 );
@@ -474,6 +714,7 @@ namespace SIGEMIC.Controllers
                         .ThenInclude(c => c.Usuario)
                 .Include(p => p.Cuota)
                 .Include(p => p.FormaPago)
+                .Include(p => p.Banco)
                 .Include(p => p.Usuario)
                 .AsQueryable();
 
@@ -533,6 +774,81 @@ namespace SIGEMIC.Controllers
             return View(pagos);
         }
 
+
+        // =====================================================
+        // VER COMPROBANTE DE UN PAGO
+        // =====================================================
+        [HttpGet]
+        [PermisoAuthorize("PAGOS_HISTORIAL")]
+        public async Task<IActionResult> VerComprobantePago(
+            ulong id)
+        {
+            var pago = await _context.Pagos
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p =>
+                    p.IdPago == id
+                );
+
+            if (pago == null)
+            {
+                return NotFound();
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                pago.ArchivoComprobante
+            ))
+            {
+                TempData["MensajeError"] =
+                    "Este pago no tiene un comprobante asociado.";
+
+                return RedirectToAction(
+                    nameof(Historial)
+                );
+            }
+
+            string nombreArchivo =
+                Path.GetFileName(
+                    pago.ArchivoComprobante
+                );
+
+            string ruta =
+                Path.Combine(
+                    _environment.ContentRootPath,
+                    "Storage",
+                    "ComprobantesPago",
+                    nombreArchivo
+                );
+
+            if (!System.IO.File.Exists(ruta))
+            {
+                TempData["MensajeError"] =
+                    "El archivo del comprobante no fue encontrado.";
+
+                return RedirectToAction(
+                    nameof(Historial)
+                );
+            }
+
+            string extension =
+                Path.GetExtension(ruta)
+                    .ToLowerInvariant();
+
+            string contentType =
+                extension switch
+                {
+                    ".jpg" => "image/jpeg",
+                    ".jpeg" => "image/jpeg",
+                    ".png" => "image/png",
+                    ".pdf" => "application/pdf",
+                    _ => "application/octet-stream"
+                };
+
+            return PhysicalFile(
+                ruta,
+                contentType
+            );
+        }
+
         // =====================================================
         // CARGAR FORMAS DE PAGO PARA CUOTAS
         // =====================================================
@@ -554,6 +870,15 @@ namespace SIGEMIC.Controllers
                             Text =
                                 f.Nombre
                         })
+                    .ToListAsync();
+
+            model.Bancos =
+                await _context.Bancos
+                    .AsNoTracking()
+                    .Where(b =>
+                        b.Estado == "ACTIVO")
+                    .OrderBy(b =>
+                        b.Nombre)
                     .ToListAsync();
         }
 
@@ -638,6 +963,15 @@ namespace SIGEMIC.Controllers
                                 f.Nombre
                         })
                     .ToListAsync();
+
+            model.Bancos =
+                await _context.Bancos
+                    .AsNoTracking()
+                    .Where(b =>
+                        b.Estado == "ACTIVO")
+                    .OrderBy(b =>
+                        b.Nombre)
+                    .ToListAsync();
         }
 
         // =====================================================
@@ -673,6 +1007,318 @@ namespace SIGEMIC.Controllers
 
             model.PlazoOriginal =
                 credito.PlazoMeses;
+        }
+
+        // =====================================================
+        // VALIDAR Y GUARDAR DATOS BANCARIOS
+        // =====================================================
+        private async Task<PreparacionComprobante>
+            PrepararDatosBancariosAsync(
+                uint idFormaPago,
+                uint? idBanco,
+                string? numeroBoleta,
+                IFormFile? comprobante)
+        {
+            var formaPago =
+                await _context.FormasPago
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(f =>
+                        f.IdFormaPago == idFormaPago &&
+                        f.Estado == "ACTIVO"
+                    );
+
+            if (formaPago == null)
+            {
+                return PreparacionComprobante.Fallo(
+                    "La forma de pago seleccionada no es válida."
+                );
+            }
+
+            string formaNormalizada =
+                formaPago.Nombre
+                    .Trim()
+                    .ToUpperInvariant();
+
+            bool requiereComprobante =
+                formaNormalizada == "TRANSFERENCIA" ||
+                formaNormalizada == "DEPOSITO";
+
+            if (!requiereComprobante)
+            {
+                return PreparacionComprobante.Ok(
+                    archivoGuardado: null
+                );
+            }
+
+            if (!idBanco.HasValue)
+            {
+                return PreparacionComprobante.Fallo(
+                    "Debe seleccionar el banco utilizado."
+                );
+            }
+
+            var banco =
+                await _context.Bancos
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(b =>
+                        b.IdBanco == idBanco.Value &&
+                        b.Estado == "ACTIVO"
+                    );
+
+            if (banco == null)
+            {
+                return PreparacionComprobante.Fallo(
+                    "El banco seleccionado no existe o está inactivo."
+                );
+            }
+
+            string boleta =
+                numeroBoleta?.Trim()
+                ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(boleta))
+            {
+                return PreparacionComprobante.Fallo(
+                    "Debe ingresar el número de boleta o comprobante."
+                );
+            }
+
+            if (boleta.Length > 100)
+            {
+                return PreparacionComprobante.Fallo(
+                    "El número de boleta no puede superar los 100 caracteres."
+                );
+            }
+
+            bool existeEnPagos =
+                await _context.Pagos
+                    .AsNoTracking()
+                    .AnyAsync(p =>
+                        p.IdBanco == idBanco.Value &&
+                        p.NumeroBoleta == boleta
+                    );
+
+            if (existeEnPagos)
+            {
+                return PreparacionComprobante.Fallo(
+                    $"La boleta {boleta} ya fue registrada para {banco.Nombre}."
+                );
+            }
+
+            bool existeEnSolicitudes =
+                await _context.SolicitudesPago
+                    .AsNoTracking()
+                    .AnyAsync(s =>
+                        s.IdBanco == idBanco.Value &&
+                        s.NumeroBoleta == boleta
+                    );
+
+            if (existeEnSolicitudes)
+            {
+                return PreparacionComprobante.Fallo(
+                    $"La boleta {boleta} ya está registrada en una solicitud de pago para {banco.Nombre}."
+                );
+            }
+
+            if (
+                comprobante == null ||
+                comprobante.Length <= 0
+            )
+            {
+                return PreparacionComprobante.Fallo(
+                    "Debe adjuntar el comprobante del depósito o transferencia."
+                );
+            }
+
+            const long maximoBytes =
+                5 * 1024 * 1024;
+
+            if (comprobante.Length > maximoBytes)
+            {
+                return PreparacionComprobante.Fallo(
+                    "El comprobante no puede superar los 5 MB."
+                );
+            }
+
+            string extension =
+                Path.GetExtension(
+                    comprobante.FileName
+                )
+                .ToLowerInvariant();
+
+            string[] extensionesPermitidas =
+            {
+                ".jpg",
+                ".jpeg",
+                ".png",
+                ".pdf"
+            };
+
+            if (!extensionesPermitidas.Contains(extension))
+            {
+                return PreparacionComprobante.Fallo(
+                    "El comprobante debe ser JPG, JPEG, PNG o PDF."
+                );
+            }
+
+            string nombreArchivo =
+                $"pago_{Guid.NewGuid():N}{extension}";
+
+            string carpeta =
+                Path.Combine(
+                    _environment.ContentRootPath,
+                    "Storage",
+                    "ComprobantesPago"
+                );
+
+            Directory.CreateDirectory(carpeta);
+
+            string rutaCompleta =
+                Path.Combine(
+                    carpeta,
+                    nombreArchivo
+                );
+
+            await using (
+                var stream =
+                    new FileStream(
+                        rutaCompleta,
+                        FileMode.CreateNew,
+                        FileAccess.Write,
+                        FileShare.None
+                    )
+            )
+            {
+                await comprobante.CopyToAsync(
+                    stream
+                );
+            }
+
+            return PreparacionComprobante.Ok(
+                nombreArchivo
+            );
+        }
+
+        // =====================================================
+        // ELIMINAR COMPROBANTE SI LA OPERACIÓN FALLA
+        // =====================================================
+        private void EliminarComprobanteSiExiste(
+            string? nombreArchivo)
+        {
+            if (string.IsNullOrWhiteSpace(
+                    nombreArchivo))
+            {
+                return;
+            }
+
+            try
+            {
+                string ruta =
+                    Path.Combine(
+                        _environment.ContentRootPath,
+                        "Storage",
+                        "ComprobantesPago",
+                        Path.GetFileName(
+                            nombreArchivo
+                        )
+                    );
+
+                if (System.IO.File.Exists(ruta))
+                {
+                    System.IO.File.Delete(ruta);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "No fue posible eliminar el comprobante temporal {Archivo}.",
+                    nombreArchivo
+                );
+            }
+        }
+
+        // =====================================================
+        // DETALLE BANCARIO PARA AUDITORÍA
+        // =====================================================
+        private static string CrearDetalleBancarioAuditoria(
+            string? formaPago,
+            uint? idBanco,
+            string? numeroBoleta)
+        {
+            string forma =
+                formaPago?.Trim().ToUpperInvariant()
+                ?? string.Empty;
+
+            if (
+                forma != "TRANSFERENCIA" &&
+                forma != "DEPOSITO"
+            )
+            {
+                return string.Empty;
+            }
+
+            return
+                $"Banco ID: {idBanco?.ToString() ?? "Sin dato"}; " +
+                $"Boleta: {numeroBoleta ?? "Sin dato"}; ";
+        }
+
+        private sealed class PreparacionComprobante
+        {
+            public bool Exito { get; init; }
+            public string? ArchivoGuardado { get; init; }
+            public string? MensajeError { get; init; }
+
+            public static PreparacionComprobante Ok(
+                string? archivoGuardado)
+            {
+                return new PreparacionComprobante
+                {
+                    Exito = true,
+                    ArchivoGuardado = archivoGuardado
+                };
+            }
+
+            public static PreparacionComprobante Fallo(
+                string error)
+            {
+                return new PreparacionComprobante
+                {
+                    Exito = false,
+                    MensajeError = error
+                };
+            }
+        }
+
+        // =====================================================
+        // AUDITORÍA SEGURA
+        // =====================================================
+        private async Task RegistrarAuditoriaSeguroAsync(
+            string accion,
+            string tablaAfectada,
+            string registroAfectado,
+            string descripcion,
+            string resultado = "EXITOSO")
+        {
+            try
+            {
+                await _auditoriaService
+                    .RegistrarUsuarioActualAsync(
+                        accion,
+                        tablaAfectada,
+                        registroAfectado,
+                        descripcion,
+                        resultado
+                    );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "No fue posible registrar la auditoría de la acción {Accion}.",
+                    accion
+                );
+            }
         }
     }
 }

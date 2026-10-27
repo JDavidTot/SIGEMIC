@@ -14,15 +14,21 @@ namespace SIGEMIC.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _environment;
         private readonly PagoService _pagoService;
+        private readonly AuditoriaService _auditoriaService;
+        private readonly ILogger<SolicitudesPagoController> _logger;
 
         public SolicitudesPagoController(
             ApplicationDbContext context,
             IWebHostEnvironment environment,
-            PagoService pagoService)
+            PagoService pagoService,
+            AuditoriaService auditoriaService,
+            ILogger<SolicitudesPagoController> logger)
         {
             _context = context;
             _environment = environment;
             _pagoService = pagoService;
+            _auditoriaService = auditoriaService;
+            _logger = logger;
         }
 
         // =====================================================
@@ -228,6 +234,10 @@ namespace SIGEMIC.Controllers
             {
                 var solicitud =
                     await _context.SolicitudesPago
+                        .Include(s => s.Cliente)
+                            .ThenInclude(c => c.Usuario)
+                        .Include(s => s.Credito)
+                        .Include(s => s.Cuota)
                         .Include(s => s.Banco)
                         .Include(s => s.Pago)
                         .FirstOrDefaultAsync(s =>
@@ -240,6 +250,9 @@ namespace SIGEMIC.Controllers
 
                     return NotFound();
                 }
+
+                string estadoAnterior =
+                    solicitud.Estado;
 
                 // =================================================
                 // SOLO SOLICITUDES PENDIENTES
@@ -345,7 +358,19 @@ namespace SIGEMIC.Controllers
                                     formaPago.IdFormaPago,
 
                                 observacion:
-                                    observacion
+                                    observacion,
+
+                                idBanco:
+                                    solicitud.IdBanco,
+
+                                numeroBoleta:
+                                    solicitud.NumeroBoleta,
+
+                                archivoComprobante:
+                                    solicitud.ArchivoComprobante,
+
+                                idSolicitudOrigen:
+                                    solicitud.IdSolicitud
                             );
                 }
 
@@ -377,7 +402,19 @@ namespace SIGEMIC.Controllers
                                     formaPago.IdFormaPago,
 
                                 observacion:
-                                    observacion
+                                    observacion,
+
+                                idBanco:
+                                    solicitud.IdBanco,
+
+                                numeroBoleta:
+                                    solicitud.NumeroBoleta,
+
+                                archivoComprobante:
+                                    solicitud.ArchivoComprobante,
+
+                                idSolicitudOrigen:
+                                    solicitud.IdSolicitud
                             );
                 }
 
@@ -448,6 +485,32 @@ namespace SIGEMIC.Controllers
 
                 await transaction.CommitAsync();
 
+                string cuotaTexto =
+                    solicitud.Cuota != null
+                        ? $"Cuota #{solicitud.Cuota.NumeroCuota}"
+                        : "Sin cuota específica";
+
+                string descripcionAuditoria =
+                    $"Solicitud #{solicitud.IdSolicitud} aprobada. " +
+                    $"Cliente: {solicitud.Cliente.CodigoCliente} - " +
+                    $"{solicitud.Cliente.Usuario.Nombres} {solicitud.Cliente.Usuario.Apellidos}; " +
+                    $"Crédito: {solicitud.Credito.CodigoCredito}; " +
+                    $"Operación: {solicitud.TipoOperacion}; " +
+                    $"{cuotaTexto}; " +
+                    $"Monto: Q{solicitud.Monto:N2}; " +
+                    $"Banco: {solicitud.Banco?.Nombre ?? solicitud.IdBanco.ToString()}; " +
+                    $"Boleta: {solicitud.NumeroBoleta}; " +
+                    $"Recibo generado: {resultado.Pago.NumeroRecibo}. " +
+                    $"Cambios: Estado: {estadoAnterior} → {solicitud.Estado}; " +
+                    $"Pago asociado: Sin dato → {resultado.Pago.IdPago}.";
+
+                await RegistrarAuditoriaSeguroAsync(
+                    "SOLICITUD_APROBADA",
+                    "solicitudes_pago",
+                    solicitud.IdSolicitud.ToString(),
+                    descripcionAuditoria
+                );
+
                 TempData["Exito"] =
                     $"La solicitud fue aprobada y el pago fue aplicado correctamente. " +
                     $"Recibo: {resultado.Pago.NumeroRecibo}.";
@@ -495,6 +558,11 @@ namespace SIGEMIC.Controllers
 
             var solicitud =
                 await _context.SolicitudesPago
+                    .Include(s => s.Cliente)
+                        .ThenInclude(c => c.Usuario)
+                    .Include(s => s.Credito)
+                    .Include(s => s.Cuota)
+                    .Include(s => s.Banco)
                     .FirstOrDefaultAsync(s =>
                         s.IdSolicitud == id
                     );
@@ -537,6 +605,9 @@ namespace SIGEMIC.Controllers
                 );
             }
 
+            string estadoAnterior =
+                solicitud.Estado;
+
             // =================================================
             // ACTUALIZAR SOLICITUD
             // =================================================
@@ -557,6 +628,31 @@ namespace SIGEMIC.Controllers
 
             await _context.SaveChangesAsync();
 
+            string cuotaTexto =
+                solicitud.Cuota != null
+                    ? $"Cuota #{solicitud.Cuota.NumeroCuota}"
+                    : "Sin cuota específica";
+
+            string descripcionAuditoria =
+                $"Solicitud #{solicitud.IdSolicitud} rechazada. " +
+                $"Cliente: {solicitud.Cliente.CodigoCliente} - " +
+                $"{solicitud.Cliente.Usuario.Nombres} {solicitud.Cliente.Usuario.Apellidos}; " +
+                $"Crédito: {solicitud.Credito.CodigoCredito}; " +
+                $"Operación: {solicitud.TipoOperacion}; " +
+                $"{cuotaTexto}; " +
+                $"Monto: Q{solicitud.Monto:N2}; " +
+                $"Banco: {solicitud.Banco.Nombre}; " +
+                $"Boleta: {solicitud.NumeroBoleta}; " +
+                $"Motivo: {solicitud.MotivoRechazo}. " +
+                $"Cambios: Estado: {estadoAnterior} → {solicitud.Estado}.";
+
+            await RegistrarAuditoriaSeguroAsync(
+                "SOLICITUD_RECHAZADA",
+                "solicitudes_pago",
+                solicitud.IdSolicitud.ToString(),
+                descripcionAuditoria
+            );
+
             TempData["Exito"] =
                 "La solicitud fue rechazada correctamente.";
 
@@ -564,6 +660,36 @@ namespace SIGEMIC.Controllers
                 nameof(Details),
                 new { id }
             );
+        }
+
+        // =====================================================
+        // AUDITORÍA SEGURA
+        // =====================================================
+        private async Task RegistrarAuditoriaSeguroAsync(
+            string accion,
+            string tablaAfectada,
+            string registroAfectado,
+            string descripcion)
+        {
+            try
+            {
+                await _auditoriaService
+                    .RegistrarUsuarioActualAsync(
+                        accion,
+                        tablaAfectada,
+                        registroAfectado,
+                        descripcion,
+                        "EXITOSO"
+                    );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "No fue posible registrar la auditoría de la acción {Accion}.",
+                    accion
+                );
+            }
         }
     }
 }
