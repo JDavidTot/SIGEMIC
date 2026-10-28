@@ -6,203 +6,541 @@
 @{
     ViewData["Title"] = "Detalle del cliente";
 
-    bool puedeEditar = User.IsInRole("ADMINISTRADOR");
-    bool puedeCambiarEstado = User.IsInRole("ADMINISTRADOR");
-    bool puedeCrearCredito = User.IsInRole("ADMINISTRADOR");
+    bool puedeEditar =
+        User.IsInRole("ADMINISTRADOR");
+
+    bool puedeCambiarEstado =
+        User.IsInRole("ADMINISTRADOR");
+
+    bool puedeCrearCredito =
+        User.IsInRole("ADMINISTRADOR");
+
+
+    // =========================================================
+    // PERMISOS DEL CAJERO
+    // =========================================================
 
     if (User.IsInRole("CAJERO"))
     {
-        var idTexto = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var idTexto =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier
+            );
 
-        if (uint.TryParse(idTexto, out uint idUsuario))
+        if (
+            uint.TryParse(
+                idTexto,
+                out uint idUsuario
+            )
+        )
         {
-            var permisos = (await PermisoService.ObtenerPermisosAsync(idUsuario))
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var permisos =
+                (
+                    await PermisoService
+                        .ObtenerPermisosAsync(
+                            idUsuario
+                        )
+                )
+                .ToHashSet(
+                    StringComparer
+                        .OrdinalIgnoreCase
+                );
 
-            puedeEditar = permisos.Contains("CLIENTES_EDITAR");
-            puedeCambiarEstado = permisos.Contains("CLIENTES_CAMBIAR_ESTADO");
-            puedeCrearCredito = permisos.Contains("CREDITOS_CREAR");
+            puedeEditar =
+                permisos.Contains(
+                    "CLIENTES_EDITAR"
+                );
+
+            puedeCambiarEstado =
+                permisos.Contains(
+                    "CLIENTES_CAMBIAR_ESTADO"
+                );
+
+            puedeCrearCredito =
+                permisos.Contains(
+                    "CREDITOS_CREAR"
+                );
         }
     }
 
-    var direccion = Model.DireccionCifrada != null
-        ? Encoding.UTF8.GetString(Model.DireccionCifrada)
-        : "No registrada";
 
-    var telefono = Model.TelefonoCifrado != null
-        ? Encoding.UTF8.GetString(Model.TelefonoCifrado)
-        : "No registrado";
+    // =========================================================
+    // DATOS PROTEGIDOS
+    // =========================================================
+
+    var direccion =
+        Model.DireccionCifrada != null
+            ? Encoding.UTF8.GetString(
+                Model.DireccionCifrada
+            )
+            : "No registrada";
+
+
+    var telefono =
+        Model.TelefonoCifrado != null
+            ? Encoding.UTF8.GetString(
+                Model.TelefonoCifrado
+            )
+            : "No registrado";
+
+
+    var correo =
+        SIGEMIC.Security.CorreoHelper
+            .LeerCorreo(
+                Model.Usuario.CorreoCifrado
+            )
+        ?? "No registrado";
 }
 
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-start mb-4">
+
+<div class="container mt-4 mb-5">
+
+
+    <!-- =====================================================
+         ENCABEZADO
+         ===================================================== -->
+
+    <div class="d-flex
+                justify-content-between
+                align-items-start
+                flex-wrap
+                gap-3
+                mb-4">
+
         <div>
-            <h2 class="mb-1">Detalle del cliente</h2>
+
+            <h2 class="mb-1">
+                Detalle del cliente
+            </h2>
+
             <p class="text-muted mb-0">
                 @Model.CodigoCliente
             </p>
+
         </div>
 
-        <div class="d-flex flex-wrap gap-2">
+
+        <div class="d-flex
+                    flex-wrap
+                    gap-2">
+
             @if (puedeEditar)
             {
                 <a asp-action="Edit"
                    asp-route-id="@Model.IdCliente"
                    class="btn btn-outline-primary">
+
                     Editar
+
                 </a>
             }
 
-            @if (puedeCrearCredito && Model.Estado == "ACTIVO")
+
+            @if (
+                puedeCrearCredito &&
+                Model.Estado == "ACTIVO"
+            )
             {
                 <a asp-controller="Creditos"
                    asp-action="Create"
                    class="btn btn-primary">
+
                     Nuevo crédito
+
                 </a>
             }
 
+
             <a asp-action="Index"
                class="btn btn-outline-secondary">
+
                 Volver
+
             </a>
+
         </div>
+
     </div>
 
-    @if (TempData["MensajeExito"] != null)
+
+    <!-- =====================================================
+         MENSAJE
+         ===================================================== -->
+
+    @if (
+        TempData["MensajeExito"] != null
+    )
     {
         <div class="alert alert-success">
+
             @TempData["MensajeExito"]
+
         </div>
     }
 
+
+    <!-- =====================================================
+         INFORMACIÓN
+         ===================================================== -->
+
     <div class="row g-4">
+
+
+        <!-- =================================================
+             INFORMACIÓN PERSONAL
+             ================================================= -->
+
         <div class="col-lg-6">
-            <div class="card shadow-sm h-100">
-                <div class="card-header fw-semibold">
+
+            <div class="card
+                        shadow-sm
+                        h-100">
+
+                <div class="card-header
+                            fw-semibold">
+
                     Información personal
+
                 </div>
 
+
                 <div class="card-body">
+
                     <dl class="row mb-0">
-                        <dt class="col-sm-5">Código</dt>
-                        <dd class="col-sm-7">@Model.CodigoCliente</dd>
 
-                        <dt class="col-sm-5">Nombre</dt>
+
+                        <!-- CÓDIGO -->
+
+                        <dt class="col-sm-5">
+                            Código
+                        </dt>
+
                         <dd class="col-sm-7">
-                            @Model.Usuario.Nombres @Model.Usuario.Apellidos
+                            @Model.CodigoCliente
                         </dd>
 
-                        <dt class="col-sm-5">Usuario</dt>
-                        <dd class="col-sm-7">@Model.Usuario.Username</dd>
 
-                        <dt class="col-sm-5">Fecha de nacimiento</dt>
+                        <!-- NOMBRE -->
+
+                        <dt class="col-sm-5">
+                            Nombre
+                        </dt>
+
                         <dd class="col-sm-7">
-                            @(Model.FechaNacimiento.HasValue
-                                ? Model.FechaNacimiento.Value.ToString("dd/MM/yyyy")
-                                : "No registrada")
+
+                            @Model.Usuario.Nombres
+                            @Model.Usuario.Apellidos
+
                         </dd>
 
-                        <dt class="col-sm-5">Teléfono</dt>
-                        <dd class="col-sm-7">@telefono</dd>
 
-                        <dt class="col-sm-5">Dirección</dt>
-                        <dd class="col-sm-7">@direccion</dd>
+                        <!-- USUARIO -->
 
-                        <dt class="col-sm-5">Estado</dt>
+                        <dt class="col-sm-5">
+                            Usuario
+                        </dt>
+
                         <dd class="col-sm-7">
-                            @if (Model.Estado == "ACTIVO")
+
+                            @Model.Usuario.Username
+
+                        </dd>
+
+
+                        <!-- CORREO -->
+
+                        <dt class="col-sm-5">
+                            Correo electrónico
+                        </dt>
+
+                        <dd class="col-sm-7">
+
+                            @correo
+
+                        </dd>
+
+
+                        <!-- FECHA NACIMIENTO -->
+
+                        <dt class="col-sm-5">
+                            Fecha de nacimiento
+                        </dt>
+
+                        <dd class="col-sm-7">
+
+                            @(
+                                Model.FechaNacimiento
+                                    .HasValue
+                                    ? Model
+                                        .FechaNacimiento
+                                        .Value
+                                        .ToString(
+                                            "dd/MM/yyyy"
+                                        )
+                                    : "No registrada"
+                            )
+
+                        </dd>
+
+
+                        <!-- TELÉFONO -->
+
+                        <dt class="col-sm-5">
+                            Teléfono
+                        </dt>
+
+                        <dd class="col-sm-7">
+
+                            @telefono
+
+                        </dd>
+
+
+                        <!-- DIRECCIÓN -->
+
+                        <dt class="col-sm-5">
+                            Dirección
+                        </dt>
+
+                        <dd class="col-sm-7">
+
+                            @direccion
+
+                        </dd>
+
+
+                        <!-- ESTADO -->
+
+                        <dt class="col-sm-5">
+                            Estado
+                        </dt>
+
+                        <dd class="col-sm-7">
+
+                            @if (
+                                Model.Estado ==
+                                "ACTIVO"
+                            )
                             {
-                                <span class="badge bg-success">ACTIVO</span>
+                                <span class="badge
+                                             bg-success">
+
+                                    ACTIVO
+
+                                </span>
                             }
                             else
                             {
-                                <span class="badge bg-secondary">INACTIVO</span>
+                                <span class="badge
+                                             bg-secondary">
+
+                                    INACTIVO
+
+                                </span>
                             }
+
                         </dd>
+
                     </dl>
+
                 </div>
+
             </div>
+
         </div>
+
+
+        <!-- =================================================
+             INFORMACIÓN LABORAL
+             ================================================= -->
 
         <div class="col-lg-6">
-            <div class="card shadow-sm h-100">
-                <div class="card-header fw-semibold">
+
+            <div class="card
+                        shadow-sm
+                        h-100">
+
+                <div class="card-header
+                            fw-semibold">
+
                     Información laboral
+
                 </div>
+
 
                 <div class="card-body">
+
                     <dl class="row mb-0">
-                        <dt class="col-sm-5">Profesión</dt>
+
+
+                        <!-- PROFESIÓN -->
+
+                        <dt class="col-sm-5">
+                            Profesión
+                        </dt>
+
                         <dd class="col-sm-7">
-                            @(string.IsNullOrWhiteSpace(Model.Profesion)
-                                ? "No registrada"
-                                : Model.Profesion)
+
+                            @(
+                                string.IsNullOrWhiteSpace(
+                                    Model.Profesion
+                                )
+                                    ? "No registrada"
+                                    : Model.Profesion
+                            )
+
                         </dd>
 
-                        <dt class="col-sm-5">Lugar de trabajo</dt>
+
+                        <!-- LUGAR TRABAJO -->
+
+                        <dt class="col-sm-5">
+                            Lugar de trabajo
+                        </dt>
+
                         <dd class="col-sm-7">
-                            @(string.IsNullOrWhiteSpace(Model.LugarTrabajo)
-                                ? "No registrado"
-                                : Model.LugarTrabajo)
+
+                            @(
+                                string.IsNullOrWhiteSpace(
+                                    Model.LugarTrabajo
+                                )
+                                    ? "No registrado"
+                                    : Model.LugarTrabajo
+                            )
+
                         </dd>
 
-                        <dt class="col-sm-5">Ingreso mensual</dt>
+
+                        <!-- INGRESO -->
+
+                        <dt class="col-sm-5">
+                            Ingreso mensual
+                        </dt>
+
                         <dd class="col-sm-7">
-                            @(Model.IngresoMensual.HasValue
-                                ? $"Q {Model.IngresoMensual.Value:N2}"
-                                : "No registrado")
+
+                            @(
+                                Model.IngresoMensual
+                                    .HasValue
+                                    ? $"Q {Model.IngresoMensual.Value:N2}"
+                                    : "No registrado"
+                            )
+
                         </dd>
 
-                        <dt class="col-sm-5">Fecha de registro</dt>
+
+                        <!-- FECHA REGISTRO -->
+
+                        <dt class="col-sm-5">
+                            Fecha de registro
+                        </dt>
+
                         <dd class="col-sm-7">
-                            @Model.FechaRegistro.ToString("dd/MM/yyyy")
+
+                            @(
+                                Model.FechaRegistro
+                                    .ToString(
+                                        "dd/MM/yyyy"
+                                    )
+                            )
+
                         </dd>
+
                     </dl>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
+
+
+    <!-- =====================================================
+         ESTADO DEL CLIENTE
+         ===================================================== -->
 
     @if (puedeCambiarEstado)
     {
-        <div class="card shadow-sm mt-4">
-            <div class="card-header fw-semibold">
+        <div class="card
+                    shadow-sm
+                    mt-4">
+
+            <div class="card-header
+                        fw-semibold">
+
                 Estado del cliente
+
             </div>
 
+
             <div class="card-body">
+
                 <form asp-action="CambiarEstado"
                       asp-route-id="@Model.IdCliente"
                       method="post">
+
                     @Html.AntiForgeryToken()
 
-                    @if (Model.Estado == "ACTIVO")
+
+                    @if (
+                        Model.Estado ==
+                        "ACTIVO"
+                    )
                     {
                         <p class="text-muted">
-                            Al inactivar al cliente también se inactivará su acceso al sistema.
+
+                            Al inactivar al cliente
+                            también se inactivará su
+                            acceso al sistema.
+
                         </p>
 
+
                         <button type="submit"
-                                class="btn btn-outline-danger"
-                                onclick="return confirm('¿Deseas inactivar este cliente?');">
+                                class="btn
+                                       btn-outline-danger"
+                                onclick="
+                                    return confirm(
+                                        '¿Deseas inactivar este cliente?'
+                                    );
+                                ">
+
                             Inactivar cliente
+
                         </button>
                     }
                     else
                     {
                         <p class="text-muted">
-                            Al activar al cliente también se habilitará nuevamente su acceso.
+
+                            Al activar al cliente
+                            también se habilitará
+                            nuevamente su acceso.
+
                         </p>
 
+
                         <button type="submit"
-                                class="btn btn-outline-success"
-                                onclick="return confirm('¿Deseas activar este cliente?');">
+                                class="btn
+                                       btn-outline-success"
+                                onclick="
+                                    return confirm(
+                                        '¿Deseas activar este cliente?'
+                                    );
+                                ">
+
                             Activar cliente
+
                         </button>
                     }
+
                 </form>
+
             </div>
+
         </div>
     }
+
 </div>

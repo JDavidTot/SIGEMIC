@@ -7,6 +7,12 @@
             StringComparer.OrdinalIgnoreCase
         );
 
+    bool puedeVerClientes = false;
+    bool puedeVerCreditos = false;
+    bool puedeRegistrarPago = false;
+    bool puedeVerSolicitudes = false;
+    bool puedeVerHistorial = false;
+
     if (
         User.Identity?.IsAuthenticated == true &&
         User.IsInRole("CAJERO")
@@ -37,13 +43,49 @@
                 );
             }
         }
+
+        puedeVerClientes =
+            permisosCajero.Contains(
+                "CLIENTES_VER"
+            );
+
+        puedeVerCreditos =
+            permisosCajero.Contains(
+                "CREDITOS_VER"
+            );
+
+        puedeRegistrarPago =
+            permisosCajero.Contains(
+                "PAGOS_REGISTRAR"
+            );
+
+        puedeVerSolicitudes =
+            permisosCajero.Contains(
+                "SOLICITUDES_VER"
+            );
+
+        puedeVerHistorial =
+            permisosCajero.Contains(
+                "PAGOS_HISTORIAL"
+            );
     }
+
+    bool mostrarOperacionesCajero =
+        puedeVerClientes ||
+        puedeVerCreditos;
+
+    bool mostrarPagosCajero =
+        puedeRegistrarPago ||
+        puedeVerSolicitudes ||
+        puedeVerHistorial;
 }
 
 <!DOCTYPE html>
+
 <html lang="es">
 
 <head>
+
     <meta charset="utf-8" />
 
     <meta name="viewport"
@@ -63,453 +105,1121 @@
     <link rel="stylesheet"
           href="~/SIGEMIC.styles.css"
           asp-append-version="true" />
+
+
+    <style>
+
+        /* =====================================================
+           BARRA PRINCIPAL
+           ===================================================== */
+
+        .sigemic-navbar {
+            min-height: 54px;
+        }
+
+        .sigemic-navbar .navbar-brand {
+            letter-spacing: .02rem;
+        }
+
+        .sigemic-navbar .nav-link {
+            border-radius: 6px;
+            padding-left: .75rem;
+            padding-right: .75rem;
+            transition:
+                background-color .15s ease,
+                color .15s ease;
+        }
+
+        .sigemic-navbar .nav-link:hover,
+        .sigemic-navbar .nav-link:focus {
+            background:
+                rgba(255, 255, 255, .12);
+            color: #ffffff;
+        }
+
+
+        /* =====================================================
+           MENÚS DESPLEGABLES
+           ===================================================== */
+
+        .sigemic-navbar .dropdown-menu {
+            min-width: 220px;
+
+            padding: .45rem;
+
+            border: 1px solid #e5e7eb;
+
+            border-radius: 10px;
+
+            box-shadow:
+                0 10px 30px
+                rgba(0, 0, 0, .10);
+        }
+
+        .sigemic-navbar .dropdown-item {
+            border-radius: 7px;
+
+            padding:
+                .55rem .75rem;
+
+            font-size: .92rem;
+        }
+
+        .sigemic-navbar .dropdown-item:hover,
+        .sigemic-navbar .dropdown-item:focus {
+            background: #f0f5ff;
+            color: #0d6efd;
+        }
+
+        .dropdown-section-title {
+            padding:
+                .35rem .75rem
+                .25rem;
+
+            font-size: .72rem;
+
+            font-weight: 700;
+
+            text-transform: uppercase;
+
+            letter-spacing: .05rem;
+
+            color: #8a929f;
+        }
+
+
+        /* =====================================================
+           MENÚ DEL USUARIO
+           ===================================================== */
+
+        .user-dropdown-button {
+            border: none;
+
+            background: transparent;
+
+            color: white;
+
+            font-size: .9rem;
+
+            padding:
+                .4rem .65rem;
+
+            border-radius: 6px;
+        }
+
+        .user-dropdown-button:hover,
+        .user-dropdown-button:focus {
+            background:
+                rgba(255,255,255,.12);
+
+            color: white;
+        }
+
+        .user-name {
+            font-weight: 700;
+        }
+
+        .logout-dropdown-button {
+            width: 100%;
+
+            border: 0;
+
+            background: transparent;
+
+            text-align: left;
+
+            padding:
+                .55rem .75rem;
+
+            border-radius: 7px;
+
+            font-size: .92rem;
+
+            color: #dc3545;
+        }
+
+        .logout-dropdown-button:hover {
+            background: #fff1f2;
+        }
+
+
+        /* =====================================================
+           ABRIR TAMBIÉN AL PASAR EL MOUSE
+           SOLO EN COMPUTADORA
+           ===================================================== */
+
+        @@media (min-width: 992px) {
+
+            .sigemic-navbar
+            .navbar-nav
+            .dropdown:hover
+            > .dropdown-menu {
+                display: block;
+                margin-top: 0;
+            }
+
+            .sigemic-navbar
+            .navbar-nav
+            .dropdown:hover
+            > .nav-link {
+                background:
+                    rgba(255, 255, 255, .12);
+            }
+        }
+
+
+        /* =====================================================
+           MÓVIL
+           ===================================================== */
+
+        @@media (max-width: 991.98px) {
+
+            .sigemic-navbar
+            .navbar-collapse {
+                padding-top: .8rem;
+                padding-bottom: .8rem;
+            }
+
+            .sigemic-navbar
+            .dropdown-menu {
+                border: none;
+
+                box-shadow: none;
+
+                background:
+                    rgba(255,255,255,.08);
+
+                margin:
+                    .25rem 0
+                    .5rem;
+            }
+
+            .sigemic-navbar
+            .dropdown-item {
+                color: white;
+            }
+
+            .sigemic-navbar
+            .dropdown-item:hover {
+                background:
+                    rgba(255,255,255,.12);
+
+                color: white;
+            }
+
+            .dropdown-section-title {
+                color:
+                    rgba(255,255,255,.65);
+            }
+
+            .sigemic-user-area {
+                margin-top: .5rem;
+
+                padding-top: .5rem;
+
+                border-top:
+                    1px solid
+                    rgba(255,255,255,.20);
+            }
+        }
+
+    </style>
+
 </head>
+
 
 <body class="bg-light">
 
-<header>
 
-    <nav class="navbar
-                navbar-expand-lg
-                navbar-dark
-                bg-primary
-                shadow-sm">
+    <!-- =====================================================
+         BARRA DE NAVEGACIÓN
+         ===================================================== -->
 
-        <div class="container">
+    <header>
 
-            <a class="navbar-brand fw-bold"
-               asp-controller="Home"
-               asp-action="Index">
+        <nav class="navbar
+                    navbar-expand-lg
+                    navbar-dark
+                    bg-primary
+                    shadow-sm
+                    sigemic-navbar">
 
-                SIGEMIC
+            <div class="container">
 
-            </a>
 
-            <button class="navbar-toggler"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#menuPrincipal"
-                    aria-controls="menuPrincipal"
-                    aria-expanded="false"
-                    aria-label="Menú">
+                <!-- =================================================
+                     LOGO
+                     ================================================= -->
 
-                <span class="navbar-toggler-icon">
-                </span>
+                <a class="navbar-brand fw-bold"
+                   asp-controller="Home"
+                   asp-action="Index">
 
-            </button>
+                    SIGEMIC
 
-            <div class="collapse navbar-collapse"
-                 id="menuPrincipal">
+                </a>
 
-                <ul class="navbar-nav
-                           me-auto
-                           mb-2
-                           mb-lg-0">
+
+                <!-- =================================================
+                     BOTÓN RESPONSIVE
+                     ================================================= -->
+
+                <button class="navbar-toggler"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#menuPrincipal"
+                        aria-controls="menuPrincipal"
+                        aria-expanded="false"
+                        aria-label="Mostrar menú">
+
+                    <span class="navbar-toggler-icon">
+                    </span>
+
+                </button>
+
+
+                <div class="collapse
+                            navbar-collapse"
+                     id="menuPrincipal">
+
+
+                    <!-- =================================================
+                         MENÚ SEGÚN ROL
+                         ================================================= -->
+
+                    <ul class="navbar-nav
+                               me-auto
+                               mb-2
+                               mb-lg-0">
+
+
+                        @if (
+                            User.Identity?.IsAuthenticated ==
+                            true
+                        )
+                        {
+
+                            <!-- =========================================
+                                 ADMINISTRADOR
+                                 ========================================= -->
+
+                            @if (
+                                User.IsInRole(
+                                    "ADMINISTRADOR"
+                                )
+                            )
+                            {
+
+                                <!-- DASHBOARD -->
+
+                                <li class="nav-item">
+
+                                    <a class="nav-link"
+                                       asp-controller="Admin"
+                                       asp-action="Index">
+
+                                        Dashboard
+
+                                    </a>
+
+                                </li>
+
+
+                                <!-- =====================================
+                                     OPERACIONES
+                                     ===================================== -->
+
+                                <li class="nav-item dropdown">
+
+                                    <a class="nav-link
+                                              dropdown-toggle"
+                                       href="#"
+                                       role="button"
+                                       data-bs-toggle="dropdown"
+                                       aria-expanded="false">
+
+                                        Operaciones
+
+                                    </a>
+
+
+                                    <ul class="dropdown-menu">
+
+
+                                        <li>
+
+                                            <div class="dropdown-section-title">
+
+                                                Gestión
+
+                                            </div>
+
+                                        </li>
+
+
+                                        <li>
+
+                                            <a class="dropdown-item"
+                                               asp-controller="Clientes"
+                                               asp-action="Index">
+
+                                                Clientes
+
+                                            </a>
+
+                                        </li>
+
+
+                                        <li>
+
+                                            <a class="dropdown-item"
+                                               asp-controller="Creditos"
+                                               asp-action="Index">
+
+                                                Créditos
+
+                                            </a>
+
+                                        </li>
+
+
+                                        <li>
+
+                                            <a class="dropdown-item"
+                                               asp-controller="PlanesCredito"
+                                               asp-action="Index">
+
+                                                Planes de crédito
+
+                                            </a>
+
+                                        </li>
+
+                                    </ul>
+
+                                </li>
+
+
+                                <!-- =====================================
+                                     PAGOS
+                                     ===================================== -->
+
+                                <li class="nav-item dropdown">
+
+                                    <a class="nav-link
+                                              dropdown-toggle"
+                                       href="#"
+                                       role="button"
+                                       data-bs-toggle="dropdown"
+                                       aria-expanded="false">
+
+                                        Pagos
+
+                                    </a>
+
+
+                                    <ul class="dropdown-menu">
+
+
+                                        <li>
+
+                                            <div class="dropdown-section-title">
+
+                                                Movimientos
+
+                                            </div>
+
+                                        </li>
+
+
+                                        <li>
+
+                                            <a class="dropdown-item"
+                                               asp-controller="Pagos"
+                                               asp-action="Index">
+
+                                                Registrar pago
+
+                                            </a>
+
+                                        </li>
+
+
+                                        <li>
+
+                                            <a class="dropdown-item"
+                                               asp-controller="SolicitudesPago"
+                                               asp-action="Index">
+
+                                                Solicitudes de pago
+
+                                            </a>
+
+                                        </li>
+
+
+                                        <li>
+
+                                            <hr class="dropdown-divider" />
+
+                                        </li>
+
+
+                                        <li>
+
+                                            <a class="dropdown-item"
+                                               asp-controller="Pagos"
+                                               asp-action="Historial">
+
+                                                Historial de pagos
+
+                                            </a>
+
+                                        </li>
+
+                                    </ul>
+
+                                </li>
+
+
+                                <!-- =====================================
+                                     ADMINISTRACIÓN
+                                     ===================================== -->
+
+                                <li class="nav-item dropdown">
+
+                                    <a class="nav-link
+                                              dropdown-toggle"
+                                       href="#"
+                                       role="button"
+                                       data-bs-toggle="dropdown"
+                                       aria-expanded="false">
+
+                                        Administración
+
+                                    </a>
+
+
+                                    <ul class="dropdown-menu">
+
+
+                                        <li>
+
+                                            <div class="dropdown-section-title">
+
+                                                Sistema
+
+                                            </div>
+
+                                        </li>
+
+
+                                        <li>
+
+                                            <a class="dropdown-item"
+                                               asp-controller="Usuarios"
+                                               asp-action="Index">
+
+                                                Usuarios
+
+                                            </a>
+
+                                        </li>
+
+
+                                        <li>
+
+                                            <a class="dropdown-item"
+                                               asp-controller="Auditoria"
+                                               asp-action="Index">
+
+                                                Auditoría
+
+                                            </a>
+
+                                        </li>
+
+                                    </ul>
+
+                                </li>
+
+                            }
+
+
+
+                            else if (
+                                User.IsInRole(
+                                    "CAJERO"
+                                )
+                            )
+                            {
+
+                                <!-- DASHBOARD -->
+
+                                <li class="nav-item">
+
+                                    <a class="nav-link"
+                                       asp-controller="Cajero"
+                                       asp-action="Index">
+
+                                        Dashboard
+
+                                    </a>
+
+                                </li>
+
+
+                                <!-- =====================================
+                                     OPERACIONES
+                                     ===================================== -->
+
+                                @if (
+                                    mostrarOperacionesCajero
+                                )
+                                {
+                                    <li class="nav-item dropdown">
+
+                                        <a class="nav-link
+                                                  dropdown-toggle"
+                                           href="#"
+                                           role="button"
+                                           data-bs-toggle="dropdown"
+                                           aria-expanded="false">
+
+                                            Operaciones
+
+                                        </a>
+
+
+                                        <ul class="dropdown-menu">
+
+
+                                            <li>
+
+                                                <div class="dropdown-section-title">
+
+                                                    Gestión
+
+                                                </div>
+
+                                            </li>
+
+
+                                            @if (
+                                                puedeVerClientes
+                                            )
+                                            {
+                                                <li>
+
+                                                    <a class="dropdown-item"
+                                                       asp-controller="Clientes"
+                                                       asp-action="Index">
+
+                                                        Clientes
+
+                                                    </a>
+
+                                                </li>
+                                            }
+
+
+                                            @if (
+                                                puedeVerCreditos
+                                            )
+                                            {
+                                                <li>
+
+                                                    <a class="dropdown-item"
+                                                       asp-controller="Creditos"
+                                                       asp-action="Index">
+
+                                                        Créditos
+
+                                                    </a>
+
+                                                </li>
+                                            }
+
+                                        </ul>
+
+                                    </li>
+                                }
+
+
+                                <!-- =====================================
+                                     PAGOS
+                                     ===================================== -->
+
+                                @if (
+                                    mostrarPagosCajero
+                                )
+                                {
+                                    <li class="nav-item dropdown">
+
+                                        <a class="nav-link
+                                                  dropdown-toggle"
+                                           href="#"
+                                           role="button"
+                                           data-bs-toggle="dropdown"
+                                           aria-expanded="false">
+
+                                            Pagos
+
+                                        </a>
+
+
+                                        <ul class="dropdown-menu">
+
+
+                                            <li>
+
+                                                <div class="dropdown-section-title">
+
+                                                    Operaciones
+
+                                                </div>
+
+                                            </li>
+
+
+                                            @if (
+                                                puedeRegistrarPago
+                                            )
+                                            {
+                                                <li>
+
+                                                    <a class="dropdown-item"
+                                                       asp-controller="Pagos"
+                                                       asp-action="Index">
+
+                                                        Registrar pago
+
+                                                    </a>
+
+                                                </li>
+                                            }
+
+
+                                            @if (
+                                                puedeVerSolicitudes
+                                            )
+                                            {
+                                                <li>
+
+                                                    <a class="dropdown-item"
+                                                       asp-controller="SolicitudesPago"
+                                                       asp-action="Index">
+
+                                                        Solicitudes de pago
+
+                                                    </a>
+
+                                                </li>
+                                            }
+
+
+                                            @if (
+                                                puedeVerHistorial
+                                            )
+                                            {
+                                                <li>
+
+                                                    <hr class="dropdown-divider" />
+
+                                                </li>
+
+
+                                                <li>
+
+                                                    <a class="dropdown-item"
+                                                       asp-controller="Pagos"
+                                                       asp-action="Historial">
+
+                                                        Historial de pagos
+
+                                                    </a>
+
+                                                </li>
+                                            }
+
+                                        </ul>
+
+                                    </li>
+                                }
+
+                            }
+
+
+                            else if (
+                                User.IsInRole(
+                                    "CLIENTE"
+                                )
+                            )
+                            {
+
+                                <!-- MI CUENTA -->
+
+                                <li class="nav-item">
+
+                                    <a class="nav-link"
+                                       asp-controller="Cliente"
+                                       asp-action="Index">
+
+                                        Mi cuenta
+
+                                    </a>
+
+                                </li>
+
+
+                                <!-- =====================================
+                                     MI CRÉDITO
+                                     ===================================== -->
+
+                                <li class="nav-item dropdown">
+
+                                    <a class="nav-link
+                                              dropdown-toggle"
+                                       href="#"
+                                       role="button"
+                                       data-bs-toggle="dropdown"
+                                       aria-expanded="false">
+
+                                        Mi crédito
+
+                                    </a>
+
+
+                                    <ul class="dropdown-menu">
+
+
+                                        <li>
+
+                                            <div class="dropdown-section-title">
+
+                                                Crédito
+
+                                            </div>
+
+                                        </li>
+
+
+                                        <li>
+
+                                            <a class="dropdown-item"
+                                               asp-controller="Cliente"
+                                               asp-action="Credito">
+
+                                                Información de mi crédito
+
+                                            </a>
+
+                                        </li>
+
+
+                                        <li>
+
+                                            <a class="dropdown-item"
+                                               asp-controller="Cliente"
+                                               asp-action="Cuotas">
+
+                                                Mis cuotas
+
+                                            </a>
+
+                                        </li>
+
+                                    </ul>
+
+                                </li>
+
+
+                                <!-- =====================================
+                                     PAGOS Y SOLICITUDES
+                                     ===================================== -->
+
+                                <li class="nav-item dropdown">
+
+                                    <a class="nav-link
+                                              dropdown-toggle"
+                                       href="#"
+                                       role="button"
+                                       data-bs-toggle="dropdown"
+                                       aria-expanded="false">
+
+                                        Pagos y solicitudes
+
+                                    </a>
+
+
+                                    <ul class="dropdown-menu">
+
+
+                                        <li>
+
+                                            <div class="dropdown-section-title">
+
+                                                Seguimiento
+
+                                            </div>
+
+                                        </li>
+
+
+                                        <li>
+
+                                            <a class="dropdown-item"
+                                               asp-controller="Cliente"
+                                               asp-action="EstadoCuenta">
+
+                                                Mis pagos
+
+                                            </a>
+
+                                        </li>
+
+
+                                        <li>
+
+                                            <hr class="dropdown-divider" />
+
+                                        </li>
+
+
+                                        <li>
+
+                                            <a class="dropdown-item"
+                                               asp-controller="Cliente"
+                                               asp-action="SolicitarPago">
+
+                                                Solicitar pago
+
+                                            </a>
+
+                                        </li>
+
+
+                                        <li>
+
+                                            <a class="dropdown-item"
+                                               asp-controller="Cliente"
+                                               asp-action="MisSolicitudes">
+
+                                                Mis solicitudes
+
+                                            </a>
+
+                                        </li>
+
+                                    </ul>
+
+                                </li>
+
+                            }
+
+                        }
+
+                    </ul>
+
+
+                    <!-- =================================================
+                         CUENTA DEL USUARIO
+                         ================================================= -->
 
                     @if (
                         User.Identity?.IsAuthenticated ==
                         true
                     )
                     {
-                        @if (
-                            User.IsInRole(
-                                "ADMINISTRADOR"
-                            )
-                        )
-                        {
-                            <li class="nav-item">
 
-                                <a class="nav-link"
-                                   asp-controller="Admin"
-                                   asp-action="Index">
+                        <ul class="navbar-nav
+                                   sigemic-user-area">
 
-                                    Dashboard
+                            <li class="nav-item
+                                       dropdown">
 
-                                </a>
+                                <button class="user-dropdown-button
+                                               dropdown-toggle"
+                                        type="button"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false">
 
-                            </li>
+                                    Usuario:
 
-                            <li class="nav-item">
+                                    <span class="user-name">
 
-                                <a class="nav-link"
-                                   asp-controller="Clientes"
-                                   asp-action="Index">
+                                        @User.Identity.Name
 
-                                    Clientes
+                                    </span>
 
-                                </a>
+                                </button>
 
-                            </li>
 
-                            <li class="nav-item">
+                                <ul class="dropdown-menu
+                                           dropdown-menu-end">
 
-                                <a class="nav-link"
-                                   asp-controller="Creditos"
-                                   asp-action="Index">
 
-                                    Créditos
+                                    <!-- =================================
+                                         PERFIL ADMIN
+                                         ================================= -->
 
-                                </a>
+                                    @if (
+                                        User.IsInRole(
+                                            "ADMINISTRADOR"
+                                        )
+                                    )
+                                    {
+                                        <li>
 
-                            </li>
+                                            <a class="dropdown-item"
+                                               asp-controller="Perfil"
+                                               asp-action="Administrador">
 
-                            <li class="nav-item">
+                                                Mi perfil
 
-                                <a class="nav-link"
-                                   asp-controller="PlanesCredito"
-                                   asp-action="Index">
+                                            </a>
 
-                                    Planes
+                                        </li>
 
-                                </a>
 
-                            </li>
+                                        <li>
 
-                            <li class="nav-item">
+                                            <hr class="dropdown-divider" />
 
-                                <a class="nav-link"
-                                   asp-controller="Pagos"
-                                   asp-action="Index">
+                                        </li>
+                                    }
 
-                                    Pagos
 
-                                </a>
+                                    <!-- =================================
+                                         CUENTA CLIENTE
+                                         ================================= -->
 
-                            </li>
+                                    @if (
+                                        User.IsInRole(
+                                            "CLIENTE"
+                                        )
+                                    )
+                                    {
+                                        <li>
 
-                            <li class="nav-item">
+                                            <a class="dropdown-item"
+                                               asp-controller="Cliente"
+                                               asp-action="Index">
 
-                                <a class="nav-link"
-                                   asp-controller="SolicitudesPago"
-                                   asp-action="Index">
+                                                Mi cuenta
 
-                                    Solicitudes
+                                            </a>
 
-                                </a>
+                                        </li>
 
-                            </li>
 
-                            <li class="nav-item">
+                                        <li>
 
-                                <a class="nav-link"
-                                   asp-controller="Pagos"
-                                   asp-action="Historial">
+                                            <hr class="dropdown-divider" />
 
-                                    Historial
+                                        </li>
+                                    }
 
-                                </a>
 
-                            </li>
+                                    <!-- =================================
+                                         CERRAR SESIÓN
+                                         ================================= -->
 
-                            <li class="nav-item">
+                                    <li>
 
-                                <a class="nav-link"
-                                   asp-controller="Usuarios"
-                                   asp-action="Index">
+                                        <form asp-controller="Account"
+                                              asp-action="Logout"
+                                              method="post"
+                                              class="m-0">
 
-                                    Usuarios
+                                            @Html.AntiForgeryToken()
 
-                                </a>
 
-                            </li>
+                                            <button type="submit"
+                                                    class="logout-dropdown-button">
 
-                            <li class="nav-item">
+                                                Cerrar sesión
 
-                                <a class="nav-link"
-                                   asp-controller="Auditoria"
-                                   asp-action="Index">
+                                            </button>
 
-                                    Auditoría
+                                        </form>
 
-                                </a>
+                                    </li>
 
-                            </li>
-                        }
-                        else if (
-                            User.IsInRole(
-                                "CAJERO"
-                            )
-                        )
-                        {
-                            <li class="nav-item">
-
-                                <a class="nav-link"
-                                   asp-controller="Cajero"
-                                   asp-action="Index">
-
-                                    Dashboard
-
-                                </a>
+                                </ul>
 
                             </li>
 
-                            @if (
-                                permisosCajero.Contains(
-                                    "CLIENTES_VER"
-                                )
-                            )
-                            {
-                                <li class="nav-item">
+                        </ul>
 
-                                    <a class="nav-link"
-                                       asp-controller="Clientes"
-                                       asp-action="Index">
-
-                                        Clientes
-
-                                    </a>
-
-                                </li>
-                            }
-
-                            @if (
-                                permisosCajero.Contains(
-                                    "CREDITOS_VER"
-                                )
-                            )
-                            {
-                                <li class="nav-item">
-
-                                    <a class="nav-link"
-                                       asp-controller="Creditos"
-                                       asp-action="Index">
-
-                                        Créditos
-
-                                    </a>
-
-                                </li>
-                            }
-
-                            @if (
-                                permisosCajero.Contains(
-                                    "PAGOS_REGISTRAR"
-                                )
-                            )
-                            {
-                                <li class="nav-item">
-
-                                    <a class="nav-link"
-                                       asp-controller="Pagos"
-                                       asp-action="Index">
-
-                                        Registrar pago
-
-                                    </a>
-
-                                </li>
-                            }
-
-                            @if (
-                                permisosCajero.Contains(
-                                    "SOLICITUDES_VER"
-                                )
-                            )
-                            {
-                                <li class="nav-item">
-
-                                    <a class="nav-link"
-                                       asp-controller="SolicitudesPago"
-                                       asp-action="Index">
-
-                                        Solicitudes
-
-                                    </a>
-
-                                </li>
-                            }
-
-                            @if (
-                                permisosCajero.Contains(
-                                    "PAGOS_HISTORIAL"
-                                )
-                            )
-                            {
-                                <li class="nav-item">
-
-                                    <a class="nav-link"
-                                       asp-controller="Pagos"
-                                       asp-action="Historial">
-
-                                        Historial
-
-                                    </a>
-
-                                </li>
-                            }
-                        }
-                        else if (
-                            User.IsInRole(
-                                "CLIENTE"
-                            )
-                        )
-                        {
-                            <li class="nav-item">
-
-                                <a class="nav-link"
-                                   asp-controller="Cliente"
-                                   asp-action="Index">
-
-                                    Mi cuenta
-
-                                </a>
-
-                            </li>
-
-                            <li class="nav-item">
-
-                                <a class="nav-link"
-                                   asp-controller="Cliente"
-                                   asp-action="Credito">
-
-                                    Mi crédito
-
-                                </a>
-
-                            </li>
-
-                            <li class="nav-item">
-
-                                <a class="nav-link"
-                                   asp-controller="Cliente"
-                                   asp-action="Cuotas">
-
-                                    Mis cuotas
-
-                                </a>
-
-                            </li>
-
-                            <li class="nav-item">
-
-                                <a class="nav-link"
-                                   asp-controller="Cliente"
-                                   asp-action="EstadoCuenta">
-
-                                    Mis pagos
-
-                                </a>
-
-                            </li>
-
-                            <li class="nav-item">
-
-                                <a class="nav-link"
-                                   asp-controller="Cliente"
-                                   asp-action="SolicitarPago">
-
-                                    Solicitar pago
-
-                                </a>
-
-                            </li>
-
-                            <li class="nav-item">
-
-                                <a class="nav-link"
-                                   asp-controller="Cliente"
-                                   asp-action="MisSolicitudes">
-
-                                    Mis solicitudes
-
-                                </a>
-
-                            </li>
-                        }
                     }
 
-                </ul>
-
-                @if (
-                    User.Identity?.IsAuthenticated ==
-                    true
-                )
-                {
-                    <div class="d-flex
-                                align-items-center
-                                gap-3">
-
-                        <span class="navbar-text
-                                     text-white">
-
-                            Usuario:
-
-                            <strong>
-                                @User.Identity.Name
-                            </strong>
-
-                        </span>
-
-                        <form asp-controller="Account"
-                              asp-action="Logout"
-                              method="post"
-                              class="m-0">
-
-                            @Html.AntiForgeryToken()
-
-                            <button type="submit"
-                                    class="btn
-                                           btn-outline-light
-                                           btn-sm">
-
-                                Cerrar sesión
-
-                            </button>
-
-                        </form>
-
-                    </div>
-                }
+                </div>
 
             </div>
 
+        </nav>
+
+    </header>
+
+
+    <!-- =====================================================
+         CONTENIDO PRINCIPAL
+         ===================================================== -->
+
+    <main role="main"
+          class="pb-5">
+
+        @RenderBody()
+
+    </main>
+
+
+    <!-- =====================================================
+         PIE DE PÁGINA
+         ===================================================== -->
+
+    <footer class="border-top
+                   bg-white
+                   text-muted
+                   py-3
+                   mt-auto">
+
+        <div class="container
+                    text-center">
+
+            © 2026 - SIGEMIC
+
+            <span class="mx-1">
+                |
+            </span>
+
+            Sistema de Gestión de Microcréditos
+
         </div>
 
-    </nav>
+    </footer>
 
-</header>
 
-<main role="main"
-      class="pb-5">
+    <!-- =====================================================
+         SCRIPTS
+         ===================================================== -->
 
-    @RenderBody()
+    <script src="~/lib/jquery/dist/jquery.min.js">
+    </script>
 
-</main>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js">
+    </script>
 
-<footer class="border-top
-               bg-white
-               text-muted
-               py-3
-               mt-auto">
+    <script src="~/js/site.js"
+            asp-append-version="true">
+    </script>
 
-    <div class="container text-center">
 
-        © 2026 - SIGEMIC
-
-        <span class="mx-1">
-            |
-        </span>
-
-        Sistema de Gestión de Microcréditos
-
-    </div>
-
-</footer>
-
-<script src="~/lib/jquery/dist/jquery.min.js">
-</script>
-
-<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js">
-</script>
-
-<script src="~/js/site.js"
-        asp-append-version="true">
-</script>
-
-@await RenderSectionAsync(
-    "Scripts",
-    required: false
-)
+    @await RenderSectionAsync(
+        "Scripts",
+        required: false
+    )
 
 </body>
 

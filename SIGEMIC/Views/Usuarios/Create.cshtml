@@ -1,51 +1,82 @@
-@model SIGEMIC.ViewModels.CrearCajeroViewModel
+@model SIGEMIC.ViewModels.CrearUsuarioViewModel
 
 @{
-    ViewData["Title"] = "Nuevo cajero";
+    ViewData["Title"] = "Nuevo usuario";
 
-    var modulos = Model.Permisos
-        .GroupBy(p => p.Modulo)
-        .ToList();
+    var grupos =
+        Model.Permisos
+            .Select(
+                (permiso, indice) =>
+                    new
+                    {
+                        Permiso = permiso,
+                        Indice = indice
+                    }
+            )
+            .GroupBy(x =>
+                x.Permiso.Modulo
+            );
 }
 
-<div class="container mt-4">
+<div class="container mt-4 mb-5">
+
+
+    <!-- =====================================================
+         ENCABEZADO
+         ===================================================== -->
 
     <div class="mb-4">
+
         <h2 class="mb-1">
-            Nuevo cajero
+            Nuevo usuario
         </h2>
 
         <p class="text-muted mb-0">
-            Registra un nuevo cajero y selecciona
-            las funciones que tendrá disponibles.
+            Registra un nuevo usuario y define
+            su nivel de acceso a SIGEMIC.
         </p>
+
     </div>
 
-    <form asp-action="Create"
-          method="post"
-          id="formCrearCajero">
+
+    <form asp-controller="Usuarios"
+          asp-action="Create"
+          method="post">
 
         @Html.AntiForgeryToken()
+
 
         <div asp-validation-summary="ModelOnly"
              class="alert alert-danger">
         </div>
 
+
+        <!-- =================================================
+             INFORMACIÓN
+             ================================================= -->
+
         <div class="card shadow-sm mb-4">
 
-            <div class="card-header fw-semibold">
-                Información del cajero
+            <div class="card-header">
+
+                <strong>
+                    Información del usuario
+                </strong>
+
             </div>
+
 
             <div class="card-body">
 
                 <div class="row g-3">
 
+
+                    <!-- NOMBRES -->
+
                     <div class="col-md-6">
 
                         <label asp-for="Nombres"
                                class="form-label">
-                            Nombres
                         </label>
 
                         <input asp-for="Nombres"
@@ -57,11 +88,13 @@
 
                     </div>
 
+
+                    <!-- APELLIDOS -->
+
                     <div class="col-md-6">
 
                         <label asp-for="Apellidos"
                                class="form-label">
-                            Apellidos
                         </label>
 
                         <input asp-for="Apellidos"
@@ -73,11 +106,13 @@
 
                     </div>
 
+
+                    <!-- USUARIO -->
+
                     <div class="col-md-6">
 
                         <label asp-for="Username"
                                class="form-label">
-                            Usuario
                         </label>
 
                         <input asp-for="Username"
@@ -90,16 +125,20 @@
 
                     </div>
 
+
+                    <!-- CORREO -->
+
                     <div class="col-md-6">
 
                         <label asp-for="Correo"
                                class="form-label">
-                            Correo electrónico
                         </label>
 
                         <input asp-for="Correo"
                                type="email"
-                               class="form-control" />
+                               class="form-control"
+                               placeholder="ejemplo@correo.com"
+                               autocomplete="email" />
 
                         <span asp-validation-for="Correo"
                               class="text-danger">
@@ -107,32 +146,38 @@
 
                     </div>
 
+
+                    <!-- CONTRASEÑA -->
+
                     <div class="col-md-6">
 
                         <label asp-for="Contrasena"
                                class="form-label">
-                            Contraseña
                         </label>
 
                         <input asp-for="Contrasena"
+                               type="password"
                                class="form-control"
                                autocomplete="new-password" />
+
+                        <div class="form-text">
+                            Debe contener al menos
+                            8 caracteres.
+                        </div>
 
                         <span asp-validation-for="Contrasena"
                               class="text-danger">
                         </span>
 
-                        <small class="text-muted">
-                            Debe contener al menos 8 caracteres.
-                        </small>
-
                     </div>
+
+
+                    <!-- ESTADO -->
 
                     <div class="col-md-6">
 
                         <label asp-for="Estado"
                                class="form-label">
-                            Estado
                         </label>
 
                         <select asp-for="Estado"
@@ -154,119 +199,257 @@
 
                     </div>
 
+
+                    <!-- ROL -->
+
+                    <div class="col-md-6">
+
+                        <label asp-for="Rol"
+                               class="form-label">
+                        </label>
+
+                        <select asp-for="Rol"
+                                id="selectorRol"
+                                class="form-select">
+
+                            <option value="">
+                                Seleccione un rol
+                            </option>
+
+                            <option value="CAJERO">
+                                CAJERO
+                            </option>
+
+                            <option value="ADMINISTRADOR">
+                                ADMINISTRADOR
+                            </option>
+
+                        </select>
+
+                        <span asp-validation-for="Rol"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
                 </div>
 
             </div>
+
         </div>
 
-        <div class="mb-3">
-            <h4 class="mb-1">
-                Permisos iniciales
-            </h4>
 
-            <p class="text-muted mb-2">
-                Selecciona las funciones que podrá utilizar.
-            </p>
+        <!-- =================================================
+             MENSAJE SIN ROL
+             ================================================= -->
 
-            <div class="alert alert-light border small">
-                Los permisos principales se marcarán automáticamente
-                cuando selecciones una función que dependa de ellos.
+        <div id="sinRol"
+             class="alert
+                    alert-light
+                    border
+                    mb-4">
+
+            Selecciona un rol para definir
+            el nivel de acceso del usuario.
+
+        </div>
+
+
+        <!-- =================================================
+             ADMINISTRADOR
+             ================================================= -->
+
+        <div id="accesoAdministrador"
+             class="card
+                    shadow-sm
+                    border-primary
+                    mb-4"
+             style="display:none;">
+
+            <div class="card-header
+                        bg-primary
+                        text-white">
+
+                <strong>
+                    Acceso administrativo
+                </strong>
+
             </div>
-        </div>
 
-        @for (
-            int i = 0;
-            i < Model.Permisos.Count;
-            i++)
-        {
-            <input type="hidden"
-                   asp-for="Permisos[i].IdPermiso" />
 
-            <input type="hidden"
-                   asp-for="Permisos[i].Codigo" />
+            <div class="card-body">
 
-            <input type="hidden"
-                   asp-for="Permisos[i].Nombre" />
+                <h5>
+                    Acceso completo a SIGEMIC
+                </h5>
 
-            <input type="hidden"
-                   asp-for="Permisos[i].Descripcion" />
 
-            <input type="hidden"
-                   asp-for="Permisos[i].Modulo" />
-        }
+                <p class="text-muted mb-2">
 
-        @foreach (var grupo in modulos)
-        {
-            <div class="card shadow-sm mb-3">
+                    Los usuarios con rol
+                    <strong>ADMINISTRADOR</strong>
+                    tienen acceso completo a todos
+                    los módulos y funciones del sistema.
 
-                <div class="card-header bg-light">
-                    <strong>
-                        @grupo.Key
-                    </strong>
+                </p>
+
+
+                <div class="alert
+                            alert-info
+                            mb-0">
+
+                    No es necesario seleccionar
+                    permisos manualmente.
+                    Los administradores reciben
+                    acceso total automáticamente
+                    mediante su rol.
+
                 </div>
 
-                <div class="card-body">
+            </div>
 
-                    @foreach (var permiso in grupo)
-                    {
-                        var indice =
-                            Model.Permisos.IndexOf(
-                                permiso
-                            );
+        </div>
 
-                        <div class="form-check mb-3">
 
-                            <input asp-for="Permisos[indice].Seleccionado"
-                                   class="form-check-input permiso-checkbox"
-                                   data-codigo="@permiso.Codigo" />
+        <!-- =================================================
+             PERMISOS DEL CAJERO
+             ================================================= -->
 
-                            <label asp-for="Permisos[indice].Seleccionado"
-                                   class="form-check-label">
+        <div id="permisosCajero"
+             style="display:none;">
 
-                                <strong>
-                                    @permiso.Nombre
-                                </strong>
 
-                                @if (
-                                    !string.IsNullOrWhiteSpace(
-                                        permiso.Descripcion
+            <div class="mb-3">
+
+                <h3 class="h4 mb-1">
+                    Permisos iniciales
+                </h3>
+
+                <p class="text-muted mb-0">
+                    Selecciona las funciones
+                    que podrá utilizar el cajero.
+                </p>
+
+            </div>
+
+
+            <div class="alert
+                        alert-light
+                        border">
+
+                Los permisos principales
+                se marcarán automáticamente
+                cuando selecciones una función
+                que dependa de ellos.
+
+            </div>
+
+
+            @foreach (var grupo in grupos)
+            {
+                <div class="card
+                            shadow-sm
+                            mb-3">
+
+                    <div class="card-header">
+
+                        <strong>
+                            @grupo.Key
+                        </strong>
+
+                    </div>
+
+
+                    <div class="card-body">
+
+                        @foreach (
+                            var elemento
+                            in grupo
+                        )
+                        {
+                            int i =
+                                elemento.Indice;
+
+                            var permiso =
+                                elemento.Permiso;
+
+
+                            <input type="hidden"
+                                   asp-for="Permisos[i].IdPermiso" />
+
+                            <input type="hidden"
+                                   asp-for="Permisos[i].Codigo" />
+
+                            <input type="hidden"
+                                   asp-for="Permisos[i].Nombre" />
+
+                            <input type="hidden"
+                                   asp-for="Permisos[i].Descripcion" />
+
+                            <input type="hidden"
+                                   asp-for="Permisos[i].Modulo" />
+
+
+                            <div class="form-check mb-3">
+
+                                <input asp-for="Permisos[i].Seleccionado"
+                                       class="form-check-input permiso-check"
+                                       data-codigo="@permiso.Codigo" />
+
+
+                                <label class="form-check-label"
+                                       asp-for="Permisos[i].Seleccionado">
+
+                                    <strong>
+                                        @permiso.Nombre
+                                    </strong>
+
+                                    @if (
+                                        !string.IsNullOrWhiteSpace(
+                                            permiso.Descripcion
+                                        )
                                     )
-                                )
-                                {
-                                    <br />
+                                    {
+                                        <div class="text-muted small">
 
-                                    <small class="text-muted">
-                                        @permiso.Descripcion
-                                    </small>
-                                }
+                                            @permiso.Descripcion
 
-                            </label>
+                                        </div>
+                                    }
 
-                        </div>
-                    }
+                                </label>
+
+                            </div>
+                        }
+
+                    </div>
 
                 </div>
+            }
 
-            </div>
-        }
+        </div>
 
-        @if (!Model.Permisos.Any())
-        {
-            <div class="alert alert-warning">
-                No existen permisos activos registrados.
-            </div>
-        }
 
-        <div class="d-flex gap-2 mt-4">
+        <!-- =================================================
+             BOTONES
+             ================================================= -->
+
+        <div class="d-flex gap-2">
 
             <button type="submit"
                     class="btn btn-primary">
-                Crear cajero
+
+                Crear usuario
+
             </button>
 
-            <a asp-action="Index"
+
+            <a asp-controller="Usuarios"
+               asp-action="Index"
                class="btn btn-outline-secondary">
+
                 Cancelar
+
             </a>
 
         </div>
@@ -275,118 +458,215 @@
 
 </div>
 
-@section Scripts
-{
-    <partial name="_ValidationScriptsPartial" />
+
+@section Scripts {
+
+    @{
+        await Html.RenderPartialAsync(
+            "_ValidationScriptsPartial"
+        );
+    }
+
 
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
 
-            const checkboxes =
-                Array.from(
-                    document.querySelectorAll(
-                        ".permiso-checkbox"
-                    )
-                );
+        document.addEventListener(
+            "DOMContentLoaded",
+            function () {
 
-            function buscar(codigo) {
-                return checkboxes.find(
-                    x => x.dataset.codigo === codigo
-                );
-            }
-
-            const dependencias = {
-                "CLIENTES_CREAR":
-                    "CLIENTES_VER",
-
-                "CLIENTES_EDITAR":
-                    "CLIENTES_VER",
-
-                "CLIENTES_CAMBIAR_ESTADO":
-                    "CLIENTES_VER",
-
-                "CREDITOS_CREAR":
-                    "CREDITOS_VER",
-
-                "CREDITOS_DETALLE":
-                    "CREDITOS_VER",
-
-                "PAGOS_ABONO_CAPITAL":
-                    "PAGOS_REGISTRAR",
-
-                "SOLICITUDES_APROBAR":
-                    "SOLICITUDES_VER",
-
-                "SOLICITUDES_RECHAZAR":
-                    "SOLICITUDES_VER"
-            };
-
-            function seleccionarPadre(
-                codigoHijo) {
-
-                const codigoPadre =
-                    dependencias[
-                        codigoHijo
-                    ];
-
-                if (!codigoPadre)
-                    return;
-
-                const padre =
-                    buscar(
-                        codigoPadre
+                const selectorRol =
+                    document.getElementById(
+                        "selectorRol"
                     );
 
-                if (padre)
-                    padre.checked = true;
-            }
-
-            function hijosSeleccionados(
-                codigoPadre) {
-
-                return Object
-                    .entries(dependencias)
-                    .some(
-                        ([hijo, padre]) =>
-                            padre === codigoPadre &&
-                            buscar(hijo)?.checked
+                const permisosCajero =
+                    document.getElementById(
+                        "permisosCajero"
                     );
-            }
 
-            checkboxes.forEach(
-                checkbox => {
+                const accesoAdministrador =
+                    document.getElementById(
+                        "accesoAdministrador"
+                    );
 
-                    checkbox.addEventListener(
-                        "change",
-                        function () {
+                const sinRol =
+                    document.getElementById(
+                        "sinRol"
+                    );
 
-                            const codigo =
-                                this.dataset.codigo;
 
-                            if (this.checked) {
-                                seleccionarPadre(
-                                    codigo
-                                );
+                function actualizarRol() {
 
-                                return;
-                            }
+                    const rol =
+                        selectorRol.value;
 
-                            if (
-                                hijosSeleccionados(
-                                    codigo
-                                )
-                            ) {
-                                this.checked =
-                                    true;
 
-                                alert(
-                                    "No puedes quitar este permiso porque otra función seleccionada depende de él."
-                                );
-                            }
-                        }
+                    permisosCajero.style.display =
+                        rol === "CAJERO"
+                            ? "block"
+                            : "none";
+
+
+                    accesoAdministrador.style.display =
+                        rol === "ADMINISTRADOR"
+                            ? "block"
+                            : "none";
+
+
+                    sinRol.style.display =
+                        rol === ""
+                            ? "block"
+                            : "none";
+                }
+
+
+                selectorRol.addEventListener(
+                    "change",
+                    actualizarRol
+                );
+
+
+                actualizarRol();
+
+
+                // =============================================
+                // DEPENDENCIAS DE PERMISOS
+                // =============================================
+
+                const dependencias = {
+
+                    "CLIENTES_CREAR":
+                        "CLIENTES_VER",
+
+                    "CLIENTES_EDITAR":
+                        "CLIENTES_VER",
+
+                    "CLIENTES_CAMBIAR_ESTADO":
+                        "CLIENTES_VER",
+
+                    "CREDITOS_CREAR":
+                        "CREDITOS_VER",
+
+                    "CREDITOS_DETALLE":
+                        "CREDITOS_VER",
+
+                    "PAGOS_ABONO_CAPITAL":
+                        "PAGOS_REGISTRAR",
+
+                    "SOLICITUDES_APROBAR":
+                        "SOLICITUDES_VER",
+
+                    "SOLICITUDES_RECHAZAR":
+                        "SOLICITUDES_VER"
+                };
+
+
+                const checks =
+                    Array.from(
+                        document.querySelectorAll(
+                            ".permiso-check"
+                        )
+                    );
+
+
+                function obtenerCheck(
+                    codigo
+                ) {
+                    return checks.find(
+                        x =>
+                            x.dataset.codigo ===
+                            codigo
                     );
                 }
-            );
-        });
+
+
+                checks.forEach(
+                    check => {
+
+                        check.addEventListener(
+                            "change",
+                            function () {
+
+                                const codigo =
+                                    this.dataset.codigo;
+
+
+                                // =================================
+                                // SI SE MARCA UN HIJO,
+                                // MARCAR PADRE
+                                // =================================
+
+                                if (
+                                    this.checked &&
+                                    dependencias[codigo]
+                                )
+                                {
+                                    const padre =
+                                        obtenerCheck(
+                                            dependencias[codigo]
+                                        );
+
+
+                                    if (padre) {
+                                        padre.checked =
+                                            true;
+                                    }
+                                }
+
+
+                                // =================================
+                                // EVITAR DESMARCAR PADRE
+                                // SI HAY HIJOS SELECCIONADOS
+                                // =================================
+
+                                if (!this.checked)
+                                {
+                                    const hijosActivos =
+                                        Object
+                                            .entries(
+                                                dependencias
+                                            )
+                                            .filter(
+                                                ([hijo, padre]) =>
+                                                    padre ===
+                                                    codigo
+                                            )
+                                            .map(
+                                                ([hijo]) =>
+                                                    obtenerCheck(
+                                                        hijo
+                                                    )
+                                            )
+                                            .filter(
+                                                hijo =>
+                                                    hijo &&
+                                                    hijo.checked
+                                            );
+
+
+                                    if (
+                                        hijosActivos.length >
+                                        0
+                                    )
+                                    {
+                                        this.checked =
+                                            true;
+
+                                        alert(
+                                            "Este permiso es requerido por otra función seleccionada."
+                                        );
+                                    }
+                                }
+
+                            }
+                        );
+
+                    }
+                );
+
+            }
+        );
+
     </script>
+
 }

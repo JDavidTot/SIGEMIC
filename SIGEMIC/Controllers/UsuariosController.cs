@@ -1,10 +1,12 @@
-using System.Text;
+using System.Security.Claims;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SIGEMIC.Data;
 using SIGEMIC.Models;
+using SIGEMIC.Security;
 using SIGEMIC.Services;
 using SIGEMIC.ViewModels;
 
@@ -27,22 +29,36 @@ public class UsuariosController : Controller
         _logger = logger;
     }
 
+
     // =====================================================
-    // LISTADO
+    // LISTADO GENERAL
+    // ADMINISTRADORES Y CAJEROS
     // =====================================================
 
     [HttpGet]
     public async Task<IActionResult> Index()
     {
-        var cajeros = await _context.Usuarios
-            .AsNoTracking()
-            .Where(u => u.Rol == "CAJERO")
-            .OrderBy(u => u.Nombres)
-            .ThenBy(u => u.Apellidos)
-            .ToListAsync();
+        var usuarios =
+            await _context.Usuarios
+                .AsNoTracking()
+                .Where(u =>
+                    u.Rol == "ADMINISTRADOR" ||
+                    u.Rol == "CAJERO"
+                )
+                .OrderBy(u =>
+                    u.Rol
+                )
+                .ThenBy(u =>
+                    u.Nombres
+                )
+                .ThenBy(u =>
+                    u.Apellidos
+                )
+                .ToListAsync();
 
-        return View(cajeros);
+        return View(usuarios);
     }
+
 
     // =====================================================
     // CREAR - GET
@@ -51,12 +67,19 @@ public class UsuariosController : Controller
     [HttpGet]
     public async Task<IActionResult> Create()
     {
-        var model = new CrearCajeroViewModel();
+        var model =
+            new CrearUsuarioViewModel
+            {
+                Estado = "ACTIVO"
+            };
 
-        await CargarPermisos(model);
+        await CargarPermisos(
+            model
+        );
 
         return View(model);
     }
+
 
     // =====================================================
     // CREAR - POST
@@ -65,26 +88,141 @@ public class UsuariosController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(
-        CrearCajeroViewModel model)
+        CrearUsuarioViewModel model)
     {
-        model.Username =
-            model.Username.Trim();
+        model.Nombres =
+            model.Nombres?.Trim()
+            ?? string.Empty;
 
-        if (await _context.Usuarios.AnyAsync(u =>
-            u.Username == model.Username))
+        model.Apellidos =
+            model.Apellidos?.Trim()
+            ?? string.Empty;
+
+        model.Username =
+            model.Username?.Trim()
+            ?? string.Empty;
+
+        model.Rol =
+            model.Rol?.Trim()
+                .ToUpperInvariant()
+            ?? string.Empty;
+
+        model.Estado =
+            model.Estado?.Trim()
+                .ToUpperInvariant()
+            ?? "ACTIVO";
+
+
+        // =================================================
+        // VALIDAR ROL
+        // =================================================
+
+        if (
+            model.Rol != "CAJERO" &&
+            model.Rol != "ADMINISTRADOR"
+        )
         {
             ModelState.AddModelError(
-                nameof(model.Username),
-                "Ese nombre de usuario ya existe."
+                nameof(model.Rol),
+                "Seleccione un rol válido."
             );
         }
 
+
+        // =================================================
+        // VALIDAR ESTADO
+        // =================================================
+
+        if (
+            model.Estado != "ACTIVO" &&
+            model.Estado != "INACTIVO"
+        )
+        {
+            ModelState.AddModelError(
+                nameof(model.Estado),
+                "Seleccione un estado válido."
+            );
+        }
+
+
+        // =================================================
+        // NORMALIZAR CORREO
+        // =================================================
+
+        byte[]? correoHash = null;
+
+        if (
+            !string.IsNullOrWhiteSpace(
+                model.Correo
+            )
+        )
+        {
+            model.Correo =
+                CorreoHelper.Normalizar(
+                    model.Correo
+                );
+
+            correoHash =
+                CorreoHelper.CalcularHash(
+                    model.Correo
+                );
+        }
+
+
+        // =================================================
+        // VALIDAR USERNAME DUPLICADO
+        // =================================================
+
+        if (
+            !string.IsNullOrWhiteSpace(
+                model.Username
+            )
+        )
+        {
+            bool usernameExiste =
+                await _context.Usuarios
+                    .AnyAsync(u =>
+                        u.Username ==
+                        model.Username
+                    );
+
+            if (usernameExiste)
+            {
+                ModelState.AddModelError(
+                    nameof(model.Username),
+                    "Ese nombre de usuario ya existe."
+                );
+            }
+        }
+
+
+        // =================================================
+        // VALIDAR CORREO DUPLICADO
+        // =================================================
+
+        if (
+            correoHash != null &&
+            await ExisteCorreoAsync(
+                correoHash
+            )
+        )
+        {
+            ModelState.AddModelError(
+                nameof(model.Correo),
+                "El correo electrónico ya está asociado a otra cuenta."
+            );
+        }
+
+
         if (!ModelState.IsValid)
         {
-            await CargarPermisos(model);
+            await CargarPermisos(
+                model
+            );
 
             return View(model);
         }
+
 
         await using var transaction =
             await _context.Database
@@ -92,40 +230,50 @@ public class UsuariosController : Controller
 
         try
         {
-            var usuario = new Usuario
-            {
-                Nombres =
-                    model.Nombres.Trim(),
+            // =================================================
+            // CREAR USUARIO
+            // =================================================
 
-                Apellidos =
-                    model.Apellidos.Trim(),
+            var usuario =
+                new Usuario
+                {
+                    Nombres =
+                        model.Nombres,
 
-                Username =
-                    model.Username,
+                    Apellidos =
+                        model.Apellidos,
 
-                CorreoCifrado =
-                    Encoding.UTF8.GetBytes(
-                        model.Correo.Trim()
-                    ),
+                    Username =
+                        model.Username,
 
-                Rol =
-                    "CAJERO",
+                    CorreoCifrado =
+                        CorreoHelper.ConvertirABytes(
+                            model.Correo
+                        ),
 
-                Estado =
-                    model.Estado,
+                    CorreoHash =
+                        correoHash,
 
-                IntentosFallidos =
-                    0,
+                    Rol =
+                        model.Rol,
 
-                UltimoAcceso =
-                    null,
+                    Estado =
+                        model.Estado,
 
-                FechaCreacion =
-                    DateTime.Now
-            };
+                    IntentosFallidos =
+                        0,
+
+                    UltimoAcceso =
+                        null,
+
+                    FechaCreacion =
+                        DateTime.Now
+                };
+
 
             var hasher =
                 new PasswordHasher<Usuario>();
+
 
             usuario.PasswordHash =
                 hasher.HashPassword(
@@ -133,94 +281,174 @@ public class UsuariosController : Controller
                     model.Contrasena
                 );
 
+
             _context.Usuarios.Add(
                 usuario
             );
 
+
             await _context.SaveChangesAsync();
 
-            // ==========================================
-            // PERMISOS SELECCIONADOS
-            // ==========================================
 
-            var idsSeleccionados =
-                model.Permisos
-                    .Where(p =>
-                        p.Seleccionado)
-                    .Select(p =>
-                        p.IdPermiso)
-                    .Distinct()
-                    .ToList();
+            // =================================================
+            // SI ES CAJERO:
+            // GUARDAR PERMISOS
+            // =================================================
 
-            // Agregar dependencias necesarias.
-            var idsFinales =
-                await ObtenerPermisosConDependencias(
-                    idsSeleccionados
-                );
+            var codigosPermisos =
+                new List<string>();
 
-            foreach (var idPermiso in idsFinales)
+
+            if (
+                usuario.Rol ==
+                "CAJERO"
+            )
             {
-                _context.UsuarioPermisos.Add(
-                    new UsuarioPermiso
-                    {
-                        IdUsuario =
-                            usuario.IdUsuario,
+                var idsSeleccionados =
+                    model.Permisos
+                        .Where(p =>
+                            p.Seleccionado
+                        )
+                        .Select(p =>
+                            p.IdPermiso
+                        )
+                        .Distinct()
+                        .ToList();
 
-                        IdPermiso =
-                            idPermiso,
 
-                        FechaAsignacion =
-                            DateTime.Now
-                    }
-                );
+                var idsFinales =
+                    await ObtenerPermisosConDependencias(
+                        idsSeleccionados
+                    );
+
+
+                foreach (
+                    uint idPermiso
+                    in idsFinales
+                )
+                {
+                    _context.UsuarioPermisos.Add(
+                        new UsuarioPermiso
+                        {
+                            IdUsuario =
+                                usuario.IdUsuario,
+
+                            IdPermiso =
+                                idPermiso,
+
+                            FechaAsignacion =
+                                DateTime.Now
+                        }
+                    );
+                }
+
+
+                await _context.SaveChangesAsync();
+
+
+                codigosPermisos =
+                    await ObtenerCodigosPermisosAsync(
+                        idsFinales
+                    );
             }
 
-            await _context.SaveChangesAsync();
+
+            // =================================================
+            // ADMINISTRADOR
+            //
+            // NO SE INSERTAN PERMISOS.
+            // SU ROL YA LE DA ACCESO COMPLETO.
+            // =================================================
+
 
             await transaction.CommitAsync();
 
-            // ==========================================
+
+            // =================================================
             // AUDITORÍA
-            // ==========================================
+            // =================================================
 
-            var codigosPermisos =
-                await ObtenerCodigosPermisosAsync(
-                    idsFinales
-                );
+            string descripcion;
 
-            string permisosTexto =
-                codigosPermisos.Count > 0
-                    ? string.Join(
-                        ", ",
-                        codigosPermisos
-                    )
-                    : "Sin permisos asignados";
+
+            if (
+                usuario.Rol ==
+                "ADMINISTRADOR"
+            )
+            {
+                descripcion =
+                    $"Usuario {usuario.Username} creado; " +
+                    $"Nombre: {usuario.Nombres} {usuario.Apellidos}; " +
+                    $"Rol: ADMINISTRADOR; " +
+                    $"Correo: Registrado; " +
+                    $"Estado: {usuario.Estado}; " +
+                    "Acceso: Completo.";
+            }
+            else
+            {
+                string permisosTexto =
+                    codigosPermisos.Count > 0
+                        ? string.Join(
+                            ", ",
+                            codigosPermisos
+                        )
+                        : "Sin permisos asignados";
+
+
+                descripcion =
+                    $"Usuario {usuario.Username} creado; " +
+                    $"Nombre: {usuario.Nombres} {usuario.Apellidos}; " +
+                    $"Rol: CAJERO; " +
+                    $"Correo: Registrado; " +
+                    $"Estado: {usuario.Estado}; " +
+                    $"Permisos iniciales: {permisosTexto}.";
+            }
+
 
             await RegistrarAuditoriaSeguroAsync(
-                "CAJERO_CREADO",
+                "USUARIO_CREADO",
                 "usuarios",
                 usuario.IdUsuario.ToString(),
-
-                $"Cajero {usuario.Username} creado. " +
-                $"Nombre: {usuario.Nombres} {usuario.Apellidos}; " +
-                $"Estado: {usuario.Estado}; " +
-                $"Permisos iniciales: {permisosTexto}."
+                descripcion
             );
 
+
             TempData["Exito"] =
-                "El cajero fue creado correctamente.";
+                usuario.Rol == "ADMINISTRADOR"
+                    ? "El administrador fue creado correctamente."
+                    : "El cajero fue creado correctamente.";
+
 
             return RedirectToAction(
                 nameof(Index)
             );
         }
-        catch
+        catch (Exception ex)
         {
             await transaction.RollbackAsync();
 
-            throw;
+
+            _logger.LogError(
+                ex,
+                "No fue posible crear el usuario."
+            );
+
+
+            ModelState.AddModelError(
+                string.Empty,
+                $"No fue posible crear el usuario: {ex.Message}"
+            );
+
+
+            await CargarPermisos(
+                model
+            );
+
+
+            return View(model);
         }
     }
+
 
     // =====================================================
     // EDITAR - GET
@@ -235,16 +463,21 @@ public class UsuariosController : Controller
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u =>
                     u.IdUsuario == id &&
-                    u.Rol == "CAJERO"
+                    (
+                        u.Rol == "ADMINISTRADOR" ||
+                        u.Rol == "CAJERO"
+                    )
                 );
+
 
         if (usuario == null)
         {
             return NotFound();
         }
 
+
         var model =
-            new EditarCajeroViewModel
+            new EditarUsuarioViewModel
             {
                 IdUsuario =
                     usuario.IdUsuario,
@@ -259,18 +492,22 @@ public class UsuariosController : Controller
                     usuario.Username,
 
                 Correo =
-                    usuario.CorreoCifrado != null
-                        ? Encoding.UTF8.GetString(
-                            usuario.CorreoCifrado
-                        )
-                        : string.Empty,
+                    CorreoHelper.LeerCorreo(
+                        usuario.CorreoCifrado
+                    )
+                    ?? string.Empty,
+
+                Rol =
+                    usuario.Rol,
 
                 Estado =
                     usuario.Estado
             };
 
+
         return View(model);
     }
+
 
     // =====================================================
     // EDITAR - POST
@@ -279,38 +516,163 @@ public class UsuariosController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(
-        EditarCajeroViewModel model)
+        EditarUsuarioViewModel model)
     {
         var usuario =
             await _context.Usuarios
                 .FirstOrDefaultAsync(u =>
                     u.IdUsuario ==
                         model.IdUsuario &&
-                    u.Rol == "CAJERO"
+                    (
+                        u.Rol ==
+                            "ADMINISTRADOR" ||
+                        u.Rol ==
+                            "CAJERO"
+                    )
                 );
+
 
         if (usuario == null)
         {
             return NotFound();
         }
 
+
+        // =================================================
+        // EL ROL NO SE CAMBIA DESDE EDITAR
+        // =================================================
+
+        ModelState.Remove(
+            nameof(model.Rol)
+        );
+
+        model.Rol =
+            usuario.Rol;
+
+
+        model.Nombres =
+            model.Nombres?.Trim()
+            ?? string.Empty;
+
+        model.Apellidos =
+            model.Apellidos?.Trim()
+            ?? string.Empty;
+
         model.Username =
-            model.Username.Trim();
+            model.Username?.Trim()
+            ?? string.Empty;
+
+        model.Estado =
+            model.Estado?.Trim()
+                .ToUpperInvariant()
+            ?? usuario.Estado;
+
+
+        // =================================================
+        // EVITAR QUE EL ADMINISTRADOR ACTUAL
+        // SE INACTIVE A SÍ MISMO
+        // =================================================
 
         if (
-            await _context.Usuarios.AnyAsync(u =>
-                u.Username ==
-                    model.Username &&
-                u.IdUsuario !=
-                    model.IdUsuario
-            )
+            usuario.Rol ==
+                "ADMINISTRADOR" &&
+            EsUsuarioActual(
+                usuario.IdUsuario
+            ) &&
+            model.Estado !=
+                "ACTIVO"
         )
+        {
+            ModelState.AddModelError(
+                nameof(model.Estado),
+                "No puedes inactivar tu propia cuenta mientras tienes la sesión iniciada."
+            );
+        }
+
+
+        // =================================================
+        // VALIDAR ESTADO
+        // =================================================
+
+        if (
+            model.Estado != "ACTIVO" &&
+            model.Estado != "INACTIVO"
+        )
+        {
+            ModelState.AddModelError(
+                nameof(model.Estado),
+                "Seleccione un estado válido."
+            );
+        }
+
+
+        // =================================================
+        // USERNAME DUPLICADO
+        // =================================================
+
+        bool usernameDuplicado =
+            await _context.Usuarios
+                .AnyAsync(u =>
+                    u.Username ==
+                        model.Username &&
+                    u.IdUsuario !=
+                        usuario.IdUsuario
+                );
+
+
+        if (usernameDuplicado)
         {
             ModelState.AddModelError(
                 nameof(model.Username),
                 "Ese nombre de usuario ya está siendo utilizado."
             );
         }
+
+
+        // =================================================
+        // CORREO
+        // =================================================
+
+        byte[]? correoHashNuevo =
+            null;
+
+
+        if (
+            !string.IsNullOrWhiteSpace(
+                model.Correo
+            )
+        )
+        {
+            model.Correo =
+                CorreoHelper.Normalizar(
+                    model.Correo
+                );
+
+
+            correoHashNuevo =
+                CorreoHelper.CalcularHash(
+                    model.Correo
+                );
+
+
+            if (
+                await ExisteCorreoAsync(
+                    correoHashNuevo,
+                    usuario.IdUsuario
+                )
+            )
+            {
+                ModelState.AddModelError(
+                    nameof(model.Correo),
+                    "El correo electrónico ya está asociado a otra cuenta."
+                );
+            }
+        }
+
+
+        // =================================================
+        // CONTRASEÑA
+        // =================================================
 
         if (
             !string.IsNullOrWhiteSpace(
@@ -325,14 +687,16 @@ public class UsuariosController : Controller
             );
         }
 
+
         if (!ModelState.IsValid)
         {
             return View(model);
         }
 
-        // ==========================================
-        // GUARDAR VALORES ANTERIORES
-        // ==========================================
+
+        // =================================================
+        // VALORES ANTERIORES
+        // =================================================
 
         string nombresAnterior =
             usuario.Nombres;
@@ -347,77 +711,64 @@ public class UsuariosController : Controller
             usuario.Estado;
 
         string? correoAnterior =
-            usuario.CorreoCifrado != null
-                ? Encoding.UTF8.GetString(
-                    usuario.CorreoCifrado
-                )
-                : null;
+            CorreoHelper.LeerCorreo(
+                usuario.CorreoCifrado
+            );
 
-        // ==========================================
-        // NUEVOS VALORES
-        // ==========================================
 
-        string nombresNuevo =
-            model.Nombres.Trim();
+        // =================================================
+        // CAMBIOS
+        // =================================================
 
-        string apellidosNuevo =
-            model.Apellidos.Trim();
+        var cambios =
+            new List<string>();
 
-        string usernameNuevo =
-            model.Username;
 
-        string correoNuevo =
-            model.Correo.Trim();
+        AgregarCambio(
+            cambios,
+            "Nombres",
+            nombresAnterior,
+            model.Nombres
+        );
 
-        string estadoNuevo =
-            model.Estado;
+
+        AgregarCambio(
+            cambios,
+            "Apellidos",
+            apellidosAnterior,
+            model.Apellidos
+        );
+
+
+        AgregarCambio(
+            cambios,
+            "Usuario",
+            usernameAnterior,
+            model.Username
+        );
+
+
+        AgregarCambioProtegido(
+            cambios,
+            "Correo",
+            correoAnterior,
+            model.Correo
+        );
+
+
+        AgregarCambio(
+            cambios,
+            "Estado",
+            estadoAnterior,
+            model.Estado
+        );
+
 
         bool contrasenaActualizada =
             !string.IsNullOrWhiteSpace(
                 model.NuevaContrasena
             );
 
-        // ==========================================
-        // DETECTAR CAMBIOS
-        // ==========================================
-
-        var cambios =
-            new List<string>();
-
-        AgregarCambio(
-            cambios,
-            "Nombres",
-            nombresAnterior,
-            nombresNuevo
-        );
-
-        AgregarCambio(
-            cambios,
-            "Apellidos",
-            apellidosAnterior,
-            apellidosNuevo
-        );
-
-        AgregarCambio(
-            cambios,
-            "Usuario",
-            usernameAnterior,
-            usernameNuevo
-        );
-
-        AgregarCambioProtegido(
-            cambios,
-            "Correo",
-            correoAnterior,
-            correoNuevo
-        );
-
-        AgregarCambio(
-            cambios,
-            "Estado",
-            estadoAnterior,
-            estadoNuevo
-        );
 
         if (contrasenaActualizada)
         {
@@ -426,69 +777,104 @@ public class UsuariosController : Controller
             );
         }
 
-        // ==========================================
-        // ACTUALIZAR
-        // ==========================================
 
-        usuario.Nombres =
-            nombresNuevo;
+        try
+        {
+            // =================================================
+            // ACTUALIZAR
+            // =================================================
 
-        usuario.Apellidos =
-            apellidosNuevo;
+            usuario.Nombres =
+                model.Nombres;
 
-        usuario.Username =
-            usernameNuevo;
+            usuario.Apellidos =
+                model.Apellidos;
 
-        usuario.CorreoCifrado =
-            Encoding.UTF8.GetBytes(
-                correoNuevo
+            usuario.Username =
+                model.Username;
+
+            usuario.Estado =
+                model.Estado;
+
+            usuario.CorreoCifrado =
+                CorreoHelper.ConvertirABytes(
+                    model.Correo
+                );
+
+            usuario.CorreoHash =
+                correoHashNuevo;
+
+
+            if (contrasenaActualizada)
+            {
+                var hasher =
+                    new PasswordHasher<Usuario>();
+
+
+                usuario.PasswordHash =
+                    hasher.HashPassword(
+                        usuario,
+                        model.NuevaContrasena!
+                    );
+            }
+
+
+            await _context.SaveChangesAsync();
+
+
+            // =================================================
+            // AUDITORÍA
+            // =================================================
+
+            string descripcion =
+                cambios.Count > 0
+                    ? $"Usuario {usuario.Username} actualizado; " +
+                      $"Rol: {usuario.Rol}; " +
+                      $"Cambios: {string.Join("; ", cambios)}."
+                    : $"Usuario {usuario.Username} revisado; " +
+                      $"Rol: {usuario.Rol}; " +
+                      "No se detectaron cambios.";
+
+
+            await RegistrarAuditoriaSeguroAsync(
+                "USUARIO_EDITADO",
+                "usuarios",
+                usuario.IdUsuario.ToString(),
+                descripcion
             );
 
-        usuario.Estado =
-            estadoNuevo;
 
-        if (contrasenaActualizada)
-        {
-            var hasher =
-                new PasswordHasher<Usuario>();
+            TempData["Exito"] =
+                "El usuario fue actualizado correctamente.";
 
-            usuario.PasswordHash =
-                hasher.HashPassword(
-                    usuario,
-                    model.NuevaContrasena!
-                );
+
+            return RedirectToAction(
+                nameof(Index)
+            );
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "No fue posible actualizar el usuario {IdUsuario}.",
+                usuario.IdUsuario
+            );
 
-        await _context.SaveChangesAsync();
 
-        // ==========================================
-        // AUDITORÍA
-        // ==========================================
+            ModelState.AddModelError(
+                string.Empty,
+                $"No fue posible actualizar el usuario: {ex.Message}"
+            );
 
-        string descripcion =
-            cambios.Count > 0
-                ? $"Cajero {usuario.Username} actualizado. " +
-                  $"Cambios: {string.Join("; ", cambios)}."
-                : $"Cajero {usuario.Username} actualizado. " +
-                  "No se detectaron cambios en los datos editables.";
 
-        await RegistrarAuditoriaSeguroAsync(
-            "CAJERO_EDITADO",
-            "usuarios",
-            usuario.IdUsuario.ToString(),
-            descripcion
-        );
-
-        TempData["Exito"] =
-            "El cajero fue actualizado correctamente.";
-
-        return RedirectToAction(
-            nameof(Index)
-        );
+            return View(model);
+        }
     }
+
 
     // =====================================================
     // PERMISOS - GET
+    // SOLO CAJERO
     // =====================================================
 
     [HttpGet]
@@ -503,28 +889,36 @@ public class UsuariosController : Controller
                     u.Rol == "CAJERO"
                 );
 
+
         if (usuario == null)
         {
             return NotFound();
         }
 
+
         var asignados =
             await _context.UsuarioPermisos
                 .Where(up =>
-                    up.IdUsuario == id)
+                    up.IdUsuario == id
+                )
                 .Select(up =>
-                    up.IdPermiso)
+                    up.IdPermiso
+                )
                 .ToListAsync();
+
 
         var permisos =
             await _context.Permisos
                 .AsNoTracking()
                 .Where(p =>
-                    p.Estado == "ACTIVO")
+                    p.Estado == "ACTIVO"
+                )
                 .OrderBy(p =>
-                    p.Modulo)
+                    p.Modulo
+                )
                 .ThenBy(p =>
-                    p.Nombre)
+                    p.Nombre
+                )
                 .Select(p =>
                     new PermisoSeleccionViewModel
                     {
@@ -547,8 +941,10 @@ public class UsuariosController : Controller
                             asignados.Contains(
                                 p.IdPermiso
                             )
-                    })
+                    }
+                )
                 .ToListAsync();
+
 
         var model =
             new PermisosCajeroViewModel
@@ -568,8 +964,10 @@ public class UsuariosController : Controller
                     permisos
             };
 
+
         return View(model);
     }
+
 
     // =====================================================
     // PERMISOS - POST
@@ -585,59 +983,69 @@ public class UsuariosController : Controller
                 .FirstOrDefaultAsync(u =>
                     u.IdUsuario ==
                         model.IdUsuario &&
-                    u.Rol == "CAJERO"
+                    u.Rol ==
+                        "CAJERO"
                 );
+
 
         if (usuario == null)
         {
             return NotFound();
         }
 
+
         await using var transaction =
             await _context.Database
                 .BeginTransactionAsync();
 
+
         try
         {
-            // ==========================================
-            // PERMISOS ANTERIORES
-            // ==========================================
-
             var actuales =
                 await _context.UsuarioPermisos
                     .Where(up =>
                         up.IdUsuario ==
-                            model.IdUsuario)
+                            usuario.IdUsuario
+                    )
                     .ToListAsync();
+
 
             var idsAnteriores =
                 actuales
                     .Select(up =>
-                        up.IdPermiso)
+                        up.IdPermiso
+                    )
                     .ToHashSet();
 
-            _context.UsuarioPermisos
-                .RemoveRange(actuales);
 
-            // ==========================================
-            // NUEVA SELECCIÓN
-            // ==========================================
+            _context.UsuarioPermisos
+                .RemoveRange(
+                    actuales
+                );
+
 
             var idsSeleccionados =
                 model.Permisos
                     .Where(p =>
-                        p.Seleccionado)
+                        p.Seleccionado
+                    )
                     .Select(p =>
-                        p.IdPermiso)
+                        p.IdPermiso
+                    )
                     .Distinct()
                     .ToList();
+
 
             var idsFinales =
                 await ObtenerPermisosConDependencias(
                     idsSeleccionados
                 );
 
-            foreach (var idPermiso in idsFinales)
+
+            foreach (
+                uint idPermiso
+                in idsFinales
+            )
             {
                 _context.UsuarioPermisos.Add(
                     new UsuarioPermiso
@@ -654,44 +1062,60 @@ public class UsuariosController : Controller
                 );
             }
 
+
             await _context.SaveChangesAsync();
+
 
             await transaction.CommitAsync();
 
-            // ==========================================
-            // COMPARAR ANTES Y DESPUÉS
-            // ==========================================
+
+            // =================================================
+            // COMPARAR PERMISOS
+            // =================================================
 
             var idsFinalesSet =
                 idsFinales.ToHashSet();
 
+
             var idsAgregados =
                 idsFinalesSet
-                    .Except(idsAnteriores)
+                    .Except(
+                        idsAnteriores
+                    )
                     .ToList();
+
 
             var idsRetirados =
                 idsAnteriores
-                    .Except(idsFinalesSet)
+                    .Except(
+                        idsFinalesSet
+                    )
                     .ToList();
+
 
             var codigosAgregados =
                 await ObtenerCodigosPermisosAsync(
                     idsAgregados
                 );
 
+
             var codigosRetirados =
                 await ObtenerCodigosPermisosAsync(
                     idsRetirados
                 );
 
+
             var cambios =
                 new List<string>();
 
-            if (codigosAgregados.Count > 0)
+
+            if (
+                codigosAgregados.Count > 0
+            )
             {
                 cambios.Add(
-                    "Permisos agregados: Sin dato → " +
+                    "Permisos agregados: " +
+                    "Sin dato → " +
                     string.Join(
                         ", ",
                         codigosAgregados
@@ -699,7 +1123,10 @@ public class UsuariosController : Controller
                 );
             }
 
-            if (codigosRetirados.Count > 0)
+
+            if (
+                codigosRetirados.Count > 0
+            )
             {
                 cambios.Add(
                     "Permisos retirados: " +
@@ -711,9 +1138,6 @@ public class UsuariosController : Controller
                 );
             }
 
-            // ==========================================
-            // AUDITORÍA
-            // ==========================================
 
             string descripcion =
                 cambios.Count > 0
@@ -722,6 +1146,7 @@ public class UsuariosController : Controller
                     : $"Permisos del cajero {usuario.Username} revisados. " +
                       "No se detectaron cambios.";
 
+
             await RegistrarAuditoriaSeguroAsync(
                 "PERMISOS_MODIFICADOS",
                 "usuario_permisos",
@@ -729,8 +1154,10 @@ public class UsuariosController : Controller
                 descripcion
             );
 
+
             TempData["Exito"] =
-                $"Los permisos de {usuario.Nombres} fueron actualizados.";
+                "Los permisos fueron actualizados correctamente.";
+
 
             return RedirectToAction(
                 nameof(Index)
@@ -739,35 +1166,41 @@ public class UsuariosController : Controller
         catch
         {
             await transaction.RollbackAsync();
-
             throw;
         }
     }
 
+
     // =====================================================
-    // CARGAR PERMISOS EN CREACIÓN
+    // CARGAR PERMISOS
     // =====================================================
 
     private async Task CargarPermisos(
-        CrearCajeroViewModel model)
+        CrearUsuarioViewModel model)
     {
         var seleccionados =
             model.Permisos
                 .Where(p =>
-                    p.Seleccionado)
+                    p.Seleccionado
+                )
                 .Select(p =>
-                    p.IdPermiso)
+                    p.IdPermiso
+                )
                 .ToHashSet();
+
 
         model.Permisos =
             await _context.Permisos
                 .AsNoTracking()
                 .Where(p =>
-                    p.Estado == "ACTIVO")
+                    p.Estado == "ACTIVO"
+                )
                 .OrderBy(p =>
-                    p.Modulo)
+                    p.Modulo
+                )
                 .ThenBy(p =>
-                    p.Nombre)
+                    p.Nombre
+                )
                 .Select(p =>
                     new PermisoSeleccionViewModel
                     {
@@ -790,12 +1223,14 @@ public class UsuariosController : Controller
                             seleccionados.Contains(
                                 p.IdPermiso
                             )
-                    })
+                    }
+                )
                 .ToListAsync();
     }
 
+
     // =====================================================
-    // NORMALIZAR PERMISOS Y AGREGAR DEPENDENCIAS
+    // DEPENDENCIAS DE PERMISOS
     // =====================================================
 
     private async Task<List<uint>>
@@ -807,68 +1242,81 @@ public class UsuariosController : Controller
                 .Distinct()
                 .ToHashSet();
 
+
         var permisosActivos =
             await _context.Permisos
                 .AsNoTracking()
                 .Where(p =>
-                    p.Estado == "ACTIVO")
+                    p.Estado ==
+                    "ACTIVO"
+                )
                 .Select(p =>
                     new
                     {
                         p.IdPermiso,
                         p.Codigo
-                    })
+                    }
+                )
                 .ToListAsync();
+
 
         var codigoPorId =
             permisosActivos
                 .ToDictionary(
                     p => p.IdPermiso,
-                    p => p.Codigo,
-                    EqualityComparer<uint>.Default
+                    p => p.Codigo
                 );
+
 
         var idPorCodigo =
             permisosActivos
                 .ToDictionary(
                     p => p.Codigo,
                     p => p.IdPermiso,
-                    StringComparer.OrdinalIgnoreCase
+                    StringComparer
+                        .OrdinalIgnoreCase
                 );
+
 
         var codigosSeleccionados =
             ids
                 .Where(id =>
-                    codigoPorId.ContainsKey(id))
+                    codigoPorId
+                        .ContainsKey(id)
+                )
                 .Select(id =>
-                    codigoPorId[id])
+                    codigoPorId[id]
+                )
                 .ToHashSet(
-                    StringComparer.OrdinalIgnoreCase
+                    StringComparer
+                        .OrdinalIgnoreCase
                 );
 
+
         void AgregarDependencia(
-            string permisoHijo,
-            string permisoPadre)
+            string hijo,
+            string padre)
         {
             if (
-                codigosSeleccionados.Contains(
-                    permisoHijo
-                ) &&
+                codigosSeleccionados
+                    .Contains(hijo) &&
                 idPorCodigo.TryGetValue(
-                    permisoPadre,
+                    padre,
                     out uint idPadre
                 )
             )
             {
-                ids.Add(idPadre);
+                ids.Add(
+                    idPadre
+                );
 
                 codigosSeleccionados.Add(
-                    permisoPadre
+                    padre
                 );
             }
         }
 
-        // CLIENTES
+
         AgregarDependencia(
             "CLIENTES_CREAR",
             "CLIENTES_VER"
@@ -884,7 +1332,6 @@ public class UsuariosController : Controller
             "CLIENTES_VER"
         );
 
-        // CRÉDITOS
         AgregarDependencia(
             "CREDITOS_CREAR",
             "CREDITOS_VER"
@@ -895,13 +1342,11 @@ public class UsuariosController : Controller
             "CREDITOS_VER"
         );
 
-        // PAGOS
         AgregarDependencia(
             "PAGOS_ABONO_CAPITAL",
             "PAGOS_REGISTRAR"
         );
 
-        // SOLICITUDES
         AgregarDependencia(
             "SOLICITUDES_APROBAR",
             "SOLICITUDES_VER"
@@ -912,18 +1357,22 @@ public class UsuariosController : Controller
             "SOLICITUDES_VER"
         );
 
+
         return permisosActivos
             .Where(p =>
                 ids.Contains(
                     p.IdPermiso
-                ))
+                )
+            )
             .Select(p =>
-                p.IdPermiso)
+                p.IdPermiso
+            )
             .ToList();
     }
 
+
     // =====================================================
-    // OBTENER CÓDIGOS DE PERMISOS
+    // OBTENER CÓDIGOS
     // =====================================================
 
     private async Task<List<string>>
@@ -935,28 +1384,95 @@ public class UsuariosController : Controller
                 .Distinct()
                 .ToList();
 
+
         if (ids.Count == 0)
         {
             return new List<string>();
         }
+
 
         return await _context.Permisos
             .AsNoTracking()
             .Where(p =>
                 ids.Contains(
                     p.IdPermiso
-                ))
+                )
+            )
             .OrderBy(p =>
-                p.Modulo)
+                p.Modulo
+            )
             .ThenBy(p =>
-                p.Codigo)
+                p.Codigo
+            )
             .Select(p =>
-                p.Codigo)
+                p.Codigo
+            )
             .ToListAsync();
     }
 
+
     // =====================================================
-    // AUDITORÍA SEGURA
+    // VALIDAR CORREO GLOBAL
+    // =====================================================
+
+    private async Task<bool> ExisteCorreoAsync(
+        byte[] correoHash,
+        uint? excluirIdUsuario = null)
+    {
+        var hashes =
+            await _context.Usuarios
+                .AsNoTracking()
+                .Where(u =>
+                    u.CorreoHash != null &&
+                    (
+                        !excluirIdUsuario.HasValue ||
+                        u.IdUsuario !=
+                            excluirIdUsuario.Value
+                    )
+                )
+                .Select(u =>
+                    u.CorreoHash!
+                )
+                .ToListAsync();
+
+
+        return hashes.Any(hash =>
+            hash.Length ==
+                correoHash.Length &&
+            CryptographicOperations
+                .FixedTimeEquals(
+                    hash,
+                    correoHash
+                )
+        );
+    }
+
+
+    // =====================================================
+    // USUARIO ACTUAL
+    // =====================================================
+
+    private bool EsUsuarioActual(
+        uint idUsuario)
+    {
+        string? idTexto =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier
+            );
+
+
+        return
+            uint.TryParse(
+                idTexto,
+                out uint idActual
+            ) &&
+            idActual ==
+                idUsuario;
+    }
+
+
+    // =====================================================
+    // AUDITORÍA
     // =====================================================
 
     private async Task RegistrarAuditoriaSeguroAsync(
@@ -980,36 +1496,39 @@ public class UsuariosController : Controller
         {
             _logger.LogError(
                 ex,
-                "No fue posible registrar la auditoría de la acción {Accion}.",
+                "No fue posible registrar la auditoría {Accion}.",
                 accion
             );
         }
     }
 
+
     // =====================================================
-    // DETECTAR CAMBIOS NORMALES
+    // CAMBIOS DE AUDITORÍA
     // =====================================================
 
     private static void AgregarCambio(
         ICollection<string> cambios,
         string campo,
-        string? valorAnterior,
-        string? valorNuevo)
+        string? anterior,
+        string? nuevo)
     {
-        string anterior =
+        string anteriorNormalizado =
             NormalizarParaComparar(
-                valorAnterior
+                anterior
             );
 
-        string nuevo =
+
+        string nuevoNormalizado =
             NormalizarParaComparar(
-                valorNuevo
+                nuevo
             );
+
 
         if (
             string.Equals(
-                anterior,
-                nuevo,
+                anteriorNormalizado,
+                nuevoNormalizado,
                 StringComparison.Ordinal
             )
         )
@@ -1017,38 +1536,37 @@ public class UsuariosController : Controller
             return;
         }
 
+
         cambios.Add(
             $"{campo}: " +
-            $"{MostrarValor(valorAnterior)} → " +
-            $"{MostrarValor(valorNuevo)}"
+            $"{MostrarValor(anterior)} → " +
+            $"{MostrarValor(nuevo)}"
         );
     }
 
-    // =====================================================
-    // DATOS SENSIBLES
-    // El correo real no se copia al log.
-    // =====================================================
 
     private static void AgregarCambioProtegido(
         ICollection<string> cambios,
         string campo,
-        string? valorAnterior,
-        string? valorNuevo)
+        string? anterior,
+        string? nuevo)
     {
-        string anterior =
+        string anteriorNormalizado =
             NormalizarParaComparar(
-                valorAnterior
+                anterior
             );
 
-        string nuevo =
+
+        string nuevoNormalizado =
             NormalizarParaComparar(
-                valorNuevo
+                nuevo
             );
+
 
         if (
             string.Equals(
-                anterior,
-                nuevo,
+                anteriorNormalizado,
+                nuevoNormalizado,
                 StringComparison.OrdinalIgnoreCase
             )
         )
@@ -1056,26 +1574,30 @@ public class UsuariosController : Controller
             return;
         }
 
-        string estadoAnterior =
+
+        string valorAnterior =
             string.IsNullOrWhiteSpace(
-                valorAnterior
+                anterior
             )
                 ? "Sin dato"
                 : "Dato registrado";
 
-        string estadoNuevo =
+
+        string valorNuevo =
             string.IsNullOrWhiteSpace(
-                valorNuevo
+                nuevo
             )
                 ? "Sin dato"
                 : "Dato actualizado";
 
+
         cambios.Add(
             $"{campo}: " +
-            $"{estadoAnterior} → " +
-            $"{estadoNuevo}"
+            $"{valorAnterior} → " +
+            $"{valorNuevo}"
         );
     }
+
 
     private static string NormalizarParaComparar(
         string? valor)
@@ -1086,6 +1608,7 @@ public class UsuariosController : Controller
             ? string.Empty
             : valor.Trim();
     }
+
 
     private static string MostrarValor(
         string? valor)

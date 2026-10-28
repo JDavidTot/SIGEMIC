@@ -59,12 +59,20 @@ namespace SIGEMIC.Controllers
             return View(cliente);
         }
 
+        // =====================================================
+        // CREAR - GET
+        // =====================================================
+
         [HttpGet]
         [PermisoAuthorize("CLIENTES_CREAR")]
         public IActionResult Create()
         {
             return View();
         }
+
+        // =====================================================
+        // CREAR - POST
+        // =====================================================
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -77,11 +85,23 @@ namespace SIGEMIC.Controllers
                 return View(model);
             }
 
-            bool existeUsuario =
-                await _context.Usuarios.AnyAsync(u =>
-                    u.Username ==
-                    model.Username.Trim()
+            model.Username =
+                model.Username.Trim();
+
+            model.Correo =
+                CorreoHelper.Normalizar(
+                    model.Correo
                 );
+
+            // =================================================
+            // VALIDAR USERNAME
+            // =================================================
+
+            bool existeUsuario =
+                await _context.Usuarios
+                    .AnyAsync(u =>
+                        u.Username == model.Username
+                    );
 
             if (existeUsuario)
             {
@@ -93,6 +113,33 @@ namespace SIGEMIC.Controllers
                 return View(model);
             }
 
+            // =================================================
+            // VALIDAR CORREO
+            // =================================================
+
+            byte[] correoHash =
+                CorreoHelper.CalcularHash(
+                    model.Correo
+                );
+
+            if (
+                await ExisteCorreoAsync(
+                    correoHash
+                )
+            )
+            {
+                ModelState.AddModelError(
+                    nameof(model.Correo),
+                    "El correo electrónico ya está asociado a otra cuenta."
+                );
+
+                return View(model);
+            }
+
+            // =================================================
+            // VALIDAR DPI
+            // =================================================
+
             byte[] dpiHash =
                 SHA256.HashData(
                     Encoding.UTF8.GetBytes(
@@ -101,9 +148,10 @@ namespace SIGEMIC.Controllers
                 );
 
             bool existeDpi =
-                await _context.Clientes.AnyAsync(c =>
-                    c.DpiHash == dpiHash
-                );
+                await _context.Clientes
+                    .AnyAsync(c =>
+                        c.DpiHash == dpiHash
+                    );
 
             if (existeDpi)
             {
@@ -121,6 +169,10 @@ namespace SIGEMIC.Controllers
 
             try
             {
+                // =============================================
+                // USUARIO
+                // =============================================
+
                 var usuario = new Usuario
                 {
                     Nombres =
@@ -130,7 +182,15 @@ namespace SIGEMIC.Controllers
                         model.Apellidos.Trim(),
 
                     Username =
-                        model.Username.Trim(),
+                        model.Username,
+
+                    CorreoCifrado =
+                        CorreoHelper.ConvertirABytes(
+                            model.Correo
+                        ),
+
+                    CorreoHash =
+                        correoHash,
 
                     Rol =
                         "CLIENTE",
@@ -159,6 +219,10 @@ namespace SIGEMIC.Controllers
                 );
 
                 await _context.SaveChangesAsync();
+
+                // =============================================
+                // CLIENTE
+                // =============================================
 
                 string codigoCliente =
                     $"CLI-{usuario.IdUsuario:D6}";
@@ -224,12 +288,19 @@ namespace SIGEMIC.Controllers
 
                 await transaction.CommitAsync();
 
+                // =============================================
+                // AUDITORÍA
+                // =============================================
+
                 await RegistrarAuditoriaSeguroAsync(
                     "CLIENTE_CREADO",
                     "clientes",
                     cliente.IdCliente.ToString(),
-                    $"Cliente {cliente.CodigoCliente} creado. " +
-                    $"Usuario: {usuario.Username}."
+
+                    $"Cliente {cliente.CodigoCliente} creado; " +
+                    $"Usuario: {usuario.Username}; " +
+                    $"Correo: Registrado; " +
+                    $"Estado: {cliente.Estado}."
                 );
 
                 TempData["MensajeExito"] =
@@ -243,8 +314,9 @@ namespace SIGEMIC.Controllers
             {
                 await transaction.RollbackAsync();
 
-                Console.WriteLine(
-                    ex.ToString()
+                _logger.LogError(
+                    ex,
+                    "Error al crear el cliente."
                 );
 
                 ModelState.AddModelError(
@@ -255,6 +327,10 @@ namespace SIGEMIC.Controllers
                 return View(model);
             }
         }
+
+        // =====================================================
+        // EDITAR - GET
+        // =====================================================
 
         [HttpGet]
         [PermisoAuthorize("CLIENTES_EDITAR")]
@@ -287,6 +363,12 @@ namespace SIGEMIC.Controllers
 
                     Username =
                         cliente.Usuario.Username,
+
+                    Correo =
+                        CorreoHelper.LeerCorreo(
+                            cliente.Usuario.CorreoCifrado
+                        )
+                        ?? string.Empty,
 
                     FechaNacimiento =
                         cliente.FechaNacimiento,
@@ -327,6 +409,10 @@ namespace SIGEMIC.Controllers
             return View(model);
         }
 
+        // =====================================================
+        // EDITAR - POST
+        // =====================================================
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         [PermisoAuthorize("CLIENTES_EDITAR")]
@@ -356,13 +442,26 @@ namespace SIGEMIC.Controllers
                 return NotFound();
             }
 
-            bool usuarioDuplicado =
-                await _context.Usuarios.AnyAsync(u =>
-                    u.Username ==
-                        model.Username.Trim() &&
-                    u.IdUsuario !=
-                        cliente.IdUsuario
+            model.Username =
+                model.Username.Trim();
+
+            model.Correo =
+                CorreoHelper.Normalizar(
+                    model.Correo
                 );
+
+            // =================================================
+            // VALIDAR USERNAME
+            // =================================================
+
+            bool usuarioDuplicado =
+                await _context.Usuarios
+                    .AnyAsync(u =>
+                        u.Username ==
+                            model.Username &&
+                        u.IdUsuario !=
+                            cliente.IdUsuario
+                    );
 
             if (usuarioDuplicado)
             {
@@ -373,6 +472,39 @@ namespace SIGEMIC.Controllers
 
                 return View(model);
             }
+
+            // =================================================
+            // VALIDAR CORREO
+            // =================================================
+
+            byte[] correoHashNuevo =
+                CorreoHelper.CalcularHash(
+                    model.Correo
+                );
+
+            if (
+                await ExisteCorreoAsync(
+                    correoHashNuevo,
+                    cliente.IdUsuario
+                )
+            )
+            {
+                ModelState.AddModelError(
+                    nameof(model.Correo),
+                    "El correo electrónico ya está asociado a otra cuenta."
+                );
+
+                return View(model);
+            }
+
+            // =================================================
+            // VALORES ANTERIORES
+            // =================================================
+
+            string? correoAnterior =
+                CorreoHelper.LeerCorreo(
+                    cliente.Usuario.CorreoCifrado
+                );
 
             string? direccionAnterior =
                 cliente.DireccionCifrada == null
@@ -388,6 +520,10 @@ namespace SIGEMIC.Controllers
                         cliente.TelefonoCifrado
                     );
 
+            // =================================================
+            // VALORES NUEVOS
+            // =================================================
+
             string nombresNuevo =
                 model.Nombres.Trim();
 
@@ -395,7 +531,10 @@ namespace SIGEMIC.Controllers
                 model.Apellidos.Trim();
 
             string usernameNuevo =
-                model.Username.Trim();
+                model.Username;
+
+            string correoNuevo =
+                model.Correo;
 
             string? direccionNueva =
                 NormalizarTexto(
@@ -417,13 +556,12 @@ namespace SIGEMIC.Controllers
                     model.LugarTrabajo
                 );
 
+            // =================================================
+            // AUDITAR CAMBIOS
+            // =================================================
+
             var cambios =
                 new List<string>();
-
-
-            // ==========================================
-            // DETECTAR CAMBIOS
-            // ==========================================
 
             AgregarCambio(
                 cambios,
@@ -444,6 +582,14 @@ namespace SIGEMIC.Controllers
                 "Usuario",
                 cliente.Usuario.Username,
                 usernameNuevo
+            );
+
+            // No exponemos el correo real en auditoría.
+            AgregarCambioProtegido(
+                cambios,
+                "Correo",
+                correoAnterior,
+                correoNuevo
             );
 
             AgregarCambio(
@@ -496,12 +642,11 @@ namespace SIGEMIC.Controllers
                 )
             );
 
-
             try
             {
-                // ======================================
-                // ACTUALIZAR
-                // ======================================
+                // =============================================
+                // ACTUALIZAR USUARIO
+                // =============================================
 
                 cliente.Usuario.Nombres =
                     nombresNuevo;
@@ -511,6 +656,18 @@ namespace SIGEMIC.Controllers
 
                 cliente.Usuario.Username =
                     usernameNuevo;
+
+                cliente.Usuario.CorreoCifrado =
+                    CorreoHelper.ConvertirABytes(
+                        correoNuevo
+                    );
+
+                cliente.Usuario.CorreoHash =
+                    correoHashNuevo;
+
+                // =============================================
+                // ACTUALIZAR CLIENTE
+                // =============================================
 
                 cliente.FechaNacimiento =
                     model.FechaNacimiento;
@@ -538,13 +695,7 @@ namespace SIGEMIC.Controllers
                 cliente.IngresoMensual =
                     model.IngresoMensual;
 
-
                 await _context.SaveChangesAsync();
-
-
-                // ======================================
-                // DESCRIPCIÓN AUDITORÍA
-                // ======================================
 
                 string descripcion;
 
@@ -561,14 +712,12 @@ namespace SIGEMIC.Controllers
                         $"Cambios: {string.Join("; ", cambios)}.";
                 }
 
-
                 await RegistrarAuditoriaSeguroAsync(
                     "CLIENTE_EDITADO",
                     "clientes",
                     cliente.IdCliente.ToString(),
                     descripcion
                 );
-
 
                 TempData["MensajeExito"] =
                     "Cliente actualizado correctamente.";
@@ -583,8 +732,10 @@ namespace SIGEMIC.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine(
-                    ex.ToString()
+                _logger.LogError(
+                    ex,
+                    "Error al actualizar el cliente {IdCliente}.",
+                    id
                 );
 
                 ModelState.AddModelError(
@@ -595,6 +746,10 @@ namespace SIGEMIC.Controllers
                 return View(model);
             }
         }
+
+        // =====================================================
+        // CAMBIAR ESTADO
+        // =====================================================
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -660,10 +815,44 @@ namespace SIGEMIC.Controllers
             );
         }
 
+        // =====================================================
+        // VALIDAR CORREO DUPLICADO
+        // =====================================================
 
-        // ==============================================
+        private async Task<bool> ExisteCorreoAsync(
+            byte[] correoHash,
+            uint? excluirIdUsuario = null)
+        {
+            var hashes =
+                await _context.Usuarios
+                    .AsNoTracking()
+                    .Where(u =>
+                        u.CorreoHash != null &&
+                        (
+                            !excluirIdUsuario.HasValue ||
+                            u.IdUsuario !=
+                                excluirIdUsuario.Value
+                        )
+                    )
+                    .Select(u =>
+                        u.CorreoHash!
+                    )
+                    .ToListAsync();
+
+            return hashes.Any(hash =>
+                hash.Length ==
+                    correoHash.Length &&
+                CryptographicOperations
+                    .FixedTimeEquals(
+                        hash,
+                        correoHash
+                    )
+            );
+        }
+
+        // =====================================================
         // AUDITORÍA SEGURA
-        // ==============================================
+        // =====================================================
 
         private async Task RegistrarAuditoriaSeguroAsync(
             string accion,
@@ -692,10 +881,9 @@ namespace SIGEMIC.Controllers
             }
         }
 
-
-        // ==============================================
-        // DETECTAR CAMBIOS NORMALES
-        // ==============================================
+        // =====================================================
+        // UTILIDADES DE AUDITORÍA
+        // =====================================================
 
         private static void AgregarCambio(
             ICollection<string> cambios,
@@ -731,11 +919,6 @@ namespace SIGEMIC.Controllers
             );
         }
 
-
-        // ==============================================
-        // CAMBIOS EN DATOS SENSIBLES
-        // ==============================================
-
         private static void AgregarCambioProtegido(
             ICollection<string> cambios,
             string campo,
@@ -756,7 +939,7 @@ namespace SIGEMIC.Controllers
                 string.Equals(
                     anterior,
                     nuevo,
-                    StringComparison.Ordinal
+                    StringComparison.OrdinalIgnoreCase
                 )
             )
             {
@@ -783,11 +966,6 @@ namespace SIGEMIC.Controllers
                 $"{estadoNuevo}"
             );
         }
-
-
-        // ==============================================
-        // UTILIDADES
-        // ==============================================
 
         private static string? NormalizarTexto(
             string? valor)

@@ -25,6 +25,8 @@ namespace SIGEMIC.Data
         public DbSet<Permiso> Permisos { get; set; }
         public DbSet<UsuarioPermiso> UsuarioPermisos { get; set; }
 
+        public DbSet<RecuperacionPassword> RecuperacionesPassword { get; set; }  = null!;
+
         protected override void OnModelCreating(
             ModelBuilder modelBuilder)
         {

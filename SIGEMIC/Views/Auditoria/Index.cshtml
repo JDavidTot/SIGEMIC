@@ -1,22 +1,27 @@
 @model IEnumerable<SIGEMIC.Models.Auditoria>
+@using Microsoft.AspNetCore.Mvc.Rendering
 
 @{
     ViewData["Title"] = "Auditoría";
 
-    string accion =
-        ViewBag.Accion ?? string.Empty;
-
     string resultado =
         ViewBag.Resultado ?? string.Empty;
-
-    string usuario =
-        ViewBag.Usuario ?? string.Empty;
 
     string desde =
         ViewBag.Desde ?? string.Empty;
 
     string hasta =
         ViewBag.Hasta ?? string.Empty;
+
+    var usuariosFiltro =
+        ViewBag.UsuariosFiltro
+        as List<SelectListItem>
+        ?? new List<SelectListItem>();
+
+    var accionesFiltro =
+        ViewBag.AccionesFiltro
+        as List<SelectListItem>
+        ?? new List<SelectListItem>();
 
     int total =
         Model.Count();
@@ -52,8 +57,9 @@
     .audit-summary-card {
         border: 0;
         border-radius: 14px;
-        transition: transform .15s ease,
-                    box-shadow .15s ease;
+        transition:
+            transform .15s ease,
+            box-shadow .15s ease;
     }
 
     .audit-summary-card:hover {
@@ -66,6 +72,11 @@
         line-height: 1;
     }
 
+    .filter-card {
+        border: 0;
+        border-radius: 14px;
+    }
+
     .audit-table-card {
         border: 0;
         border-radius: 14px;
@@ -74,7 +85,7 @@
 
     .audit-table thead th {
         background: #f8f9fa;
-        font-size: .82rem;
+        font-size: .78rem;
         text-transform: uppercase;
         letter-spacing: .025rem;
         color: #495057;
@@ -84,32 +95,103 @@
     }
 
     .audit-table tbody td {
-        vertical-align: middle;
-        padding-top: 14px;
-        padding-bottom: 14px;
+        vertical-align: top;
+        padding-top: 16px;
+        padding-bottom: 16px;
     }
 
     .audit-table tbody tr {
-        transition: background-color .15s ease;
+        transition:
+            background-color .15s ease;
     }
 
     .audit-table tbody tr:hover {
         background-color: #f8fbff;
     }
 
+    .audit-date {
+        min-width: 125px;
+    }
+
     .audit-user {
-        min-width: 150px;
+        min-width: 125px;
     }
 
-    .audit-description {
-        min-width: 390px;
-        max-width: 600px;
+    .audit-action {
+        min-width: 180px;
+        font-weight: 600;
+        color: #212529;
     }
 
-    .audit-description-summary {
-        font-size: .9rem;
-        color: #495057;
-        margin-bottom: 7px;
+    .audit-ip {
+        min-width: 110px;
+        font-family: monospace;
+        font-size: .82rem;
+    }
+
+    .audit-result {
+        min-width: 110px;
+    }
+
+    .audit-detail {
+        min-width: 470px;
+        max-width: 720px;
+    }
+
+    .audit-operation {
+        background: #fbfcfe;
+        border: 1px solid #e6eaf0;
+        border-radius: 10px;
+        padding: 10px;
+    }
+
+    .audit-operation-title {
+        font-size: .86rem;
+        font-weight: 600;
+        color: #343a40;
+        margin-bottom: 8px;
+    }
+
+    .audit-data-grid {
+        display: grid;
+        grid-template-columns:
+            repeat(
+                auto-fit,
+                minmax(145px, 1fr)
+            );
+        gap: 7px;
+    }
+
+    .audit-data-item {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 7px 9px;
+    }
+
+    .audit-data-label {
+        display: block;
+        font-size: .67rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #6c757d;
+        margin-bottom: 2px;
+    }
+
+    .audit-data-value {
+        font-size: .82rem;
+        font-weight: 500;
+        color: #212529;
+        word-break: break-word;
+    }
+
+    .audit-changes-title {
+        font-size: .72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #6c757d;
+        margin-top: 10px;
+        margin-bottom: 5px;
     }
 
     .audit-change {
@@ -121,7 +203,7 @@
     }
 
     .audit-change-field {
-        font-size: .72rem;
+        font-size: .68rem;
         font-weight: 700;
         text-transform: uppercase;
         color: #6c757d;
@@ -131,7 +213,6 @@
     .audit-value {
         display: inline-flex;
         align-items: center;
-        gap: 5px;
         padding: 3px 8px;
         border-radius: 7px;
         font-size: .78rem;
@@ -152,28 +233,8 @@
     .audit-arrow {
         font-weight: 700;
         color: #6c757d;
-        padding-left: 3px;
-        padding-right: 3px;
-    }
-
-    .audit-table-id {
-        display: inline-block;
-        font-size: .75rem;
-        background: #f1f3f5;
-        border-radius: 6px;
-        padding: 2px 6px;
-        margin-top: 3px;
-        color: #495057;
-    }
-
-    .audit-ip {
-        font-family: monospace;
-        font-size: .82rem;
-    }
-
-    .filter-card {
-        border: 0;
-        border-radius: 14px;
+        padding-left: 5px;
+        padding-right: 5px;
     }
 
 </style>
@@ -186,7 +247,8 @@
          ENCABEZADO
          ============================================== -->
 
-    <div class="d-flex flex-wrap
+    <div class="d-flex
+                flex-wrap
                 justify-content-between
                 align-items-center
                 gap-3
@@ -202,27 +264,25 @@
 
             <p class="text-muted mb-0">
 
-                Seguimiento de accesos, operaciones
-                y cambios realizados en SIGEMIC.
+                Seguimiento de accesos,
+                operaciones y cambios realizados
+                en SIGEMIC.
 
             </p>
 
         </div>
 
-        <div>
 
-            <span class="badge
-                         rounded-pill
-                         bg-dark
-                         fs-6
-                         px-3
-                         py-2">
+        <span class="badge
+                     rounded-pill
+                     bg-dark
+                     fs-6
+                     px-3
+                     py-2">
 
-                @total registros
+            @total registros
 
-            </span>
-
-        </div>
+        </span>
 
     </div>
 
@@ -243,7 +303,9 @@
                 <div class="card-body">
 
                     <small class="text-muted">
+
                         Registros mostrados
+
                     </small>
 
                     <div class="audit-summary-number mt-2">
@@ -269,7 +331,9 @@
                 <div class="card-body">
 
                     <small class="text-muted">
+
                         Exitosos
+
                     </small>
 
                     <div class="audit-summary-number
@@ -297,7 +361,9 @@
                 <div class="card-body">
 
                     <small class="text-muted">
+
                         Fallidos
+
                     </small>
 
                     <div class="audit-summary-number
@@ -325,7 +391,9 @@
                 <div class="card-body">
 
                     <small class="text-muted">
+
                         Usuarios involucrados
+
                     </small>
 
                     <div class="audit-summary-number
@@ -355,14 +423,16 @@
                 mb-4">
 
         <div class="card-header
-                    bg-white
-                    border-bottom">
+                    bg-white">
 
             <strong>
+
                 Filtros de búsqueda
+
             </strong>
 
         </div>
+
 
         <div class="card-body">
 
@@ -373,7 +443,9 @@
                 <div class="row g-3">
 
 
-                    <!-- USUARIO -->
+                    <!-- ===============================
+                         USUARIO
+                         =============================== -->
 
                     <div class="col-md-4">
 
@@ -383,16 +455,24 @@
 
                         </label>
 
-                        <input type="text"
-                               name="usuario"
-                               value="@usuario"
-                               class="form-control"
-                               placeholder="Username o nombre" />
+                        <select name="usuario"
+                                class="form-select"
+                                asp-items="usuariosFiltro">
+
+                            <option value="">
+
+                                Todos los usuarios
+
+                            </option>
+
+                        </select>
 
                     </div>
 
 
-                    <!-- ACCIÓN -->
+                    <!-- ===============================
+                         ACCIÓN
+                         =============================== -->
 
                     <div class="col-md-4">
 
@@ -402,16 +482,24 @@
 
                         </label>
 
-                        <input type="text"
-                               name="accion"
-                               value="@accion"
-                               class="form-control"
-                               placeholder="Ej. CLIENTE, LOGIN, PAGO..." />
+                        <select name="accion"
+                                class="form-select"
+                                asp-items="accionesFiltro">
+
+                            <option value="">
+
+                                Todas las acciones
+
+                            </option>
+
+                        </select>
 
                     </div>
 
 
-                    <!-- RESULTADO -->
+                    <!-- ===============================
+                         RESULTADO
+                         =============================== -->
 
                     <div class="col-md-4">
 
@@ -425,34 +513,52 @@
                                 class="form-select">
 
                             <option value="">
-                                Todos
+
+                                Todos los resultados
+
                             </option>
 
-                            @if (resultado == "EXITOSO")
+
+                            @if (
+                                resultado ==
+                                "EXITOSO"
+                            )
                             {
                                 <option value="EXITOSO"
                                         selected>
+
                                     Exitoso
+
                                 </option>
                             }
                             else
                             {
                                 <option value="EXITOSO">
+
                                     Exitoso
+
                                 </option>
                             }
 
-                            @if (resultado == "FALLIDO")
+
+                            @if (
+                                resultado ==
+                                "FALLIDO"
+                            )
                             {
                                 <option value="FALLIDO"
                                         selected>
+
                                     Fallido
+
                                 </option>
                             }
                             else
                             {
                                 <option value="FALLIDO">
+
                                     Fallido
+
                                 </option>
                             }
 
@@ -461,7 +567,9 @@
                     </div>
 
 
-                    <!-- DESDE -->
+                    <!-- ===============================
+                         DESDE
+                         =============================== -->
 
                     <div class="col-md-3">
 
@@ -479,7 +587,9 @@
                     </div>
 
 
-                    <!-- HASTA -->
+                    <!-- ===============================
+                         HASTA
+                         =============================== -->
 
                     <div class="col-md-3">
 
@@ -503,15 +613,19 @@
                                 gap-2">
 
                         <button type="submit"
-                                class="btn btn-primary px-4">
+                                class="btn
+                                       btn-primary
+                                       px-4">
 
                             Buscar
 
                         </button>
 
+
                         <a asp-controller="Auditoria"
                            asp-action="Index"
-                           class="btn btn-outline-secondary">
+                           class="btn
+                                  btn-outline-secondary">
 
                             Limpiar filtros
 
@@ -545,7 +659,9 @@
                         align-items-center">
 
                 <strong>
+
                     Registro de eventos
+
                 </strong>
 
                 <small class="text-muted">
@@ -558,13 +674,13 @@
 
         </div>
 
+
         <div class="card-body p-0">
 
             @if (!Model.Any())
             {
                 <div class="text-center
-                            py-5
-                            px-3">
+                            py-5">
 
                     <h5>
 
@@ -607,10 +723,6 @@
                                 </th>
 
                                 <th>
-                                    Recurso
-                                </th>
-
-                                <th>
                                     IP
                                 </th>
 
@@ -626,139 +738,219 @@
 
                         </thead>
 
+
                         <tbody>
 
-                        @foreach (var auditoria in Model)
+                        @foreach (
+                            var auditoria in Model
+                        )
                         {
-                            string accionClase =
-                                "bg-secondary";
-
-                            if (
-                                auditoria.Accion.Contains(
-                                    "CLIENTE"
-                                )
-                            )
-                            {
-                                accionClase =
-                                    "bg-primary";
-                            }
-                            else if (
-                                auditoria.Accion.Contains(
-                                    "LOGIN"
-                                )
-                            )
-                            {
-                                accionClase =
-                                    "bg-info text-dark";
-                            }
-                            else if (
-                                auditoria.Accion.Contains(
-                                    "LOGOUT"
-                                )
-                            )
-                            {
-                                accionClase =
-                                    "bg-secondary";
-                            }
-                            else if (
-                                auditoria.Accion.Contains(
-                                    "CREDITO"
-                                )
-                            )
-                            {
-                                accionClase =
-                                    "bg-warning text-dark";
-                            }
-                            else if (
-                                auditoria.Accion.Contains(
-                                    "PAGO"
-                                )
-                            )
-                            {
-                                accionClase =
-                                    "bg-success";
-                            }
-                            else if (
-                                auditoria.Accion.Contains(
-                                    "SOLICITUD"
-                                )
-                            )
-                            {
-                                accionClase =
-                                    "bg-dark";
-                            }
-                            else if (
-                                auditoria.Accion.Contains(
-                                    "PERMISO"
-                                )
-                            )
-                            {
-                                accionClase =
-                                    "bg-danger";
-                            }
-
                             string descripcion =
                                 auditoria.Descripcion
                                 ?? string.Empty;
 
+
+                            // ==============================
+                            // SEPARAR CAMBIOS
+                            // ==============================
+
                             int posicionCambios =
                                 descripcion.IndexOf(
                                     "Cambios:",
-                                    StringComparison.OrdinalIgnoreCase
+                                    StringComparison
+                                        .OrdinalIgnoreCase
                                 );
 
                             bool tieneCambios =
                                 posicionCambios >= 0;
 
-                            string resumenDescripcion =
+                            string operacionTexto =
                                 tieneCambios
                                     ? descripcion[
                                         ..posicionCambios
                                       ].Trim()
-                                    : descripcion;
+                                    : descripcion.Trim();
+
+                            string cambiosTexto =
+                                tieneCambios
+                                    ? descripcion[
+                                        (posicionCambios + 8)..
+                                      ].Trim()
+                                    : string.Empty;
+
+
+                            // ==============================
+                            // NORMALIZAR ALGUNOS CAMPOS
+                            // PARA PRESENTACIÓN
+                            // ==============================
+
+                            operacionTexto =
+                                operacionTexto
+                                    .Replace(
+                                        ". Crédito:",
+                                        "; Crédito:"
+                                    )
+                                    .Replace(
+                                        ". Cliente:",
+                                        "; Cliente:"
+                                    )
+                                    .Replace(
+                                        ". Usuario:",
+                                        "; Usuario:"
+                                    )
+                                    .Replace(
+                                        ". Rol:",
+                                        "; Rol:"
+                                    )
+                                    .Replace(
+                                        ". Nombre:",
+                                        "; Nombre:"
+                                    )
+                                    .Replace(
+                                        ". Estado:",
+                                        "; Estado:"
+                                    );
+
+
+                            // ==============================
+                            // DATOS DE LA OPERACIÓN
+                            // ==============================
+
+                            string resumenOperacion =
+                                string.Empty;
+
+                            var datosOperacion =
+                                new List<
+                                    (string Campo,
+                                     string Valor)
+                                >();
+
+
+                            if (
+                                !string.IsNullOrWhiteSpace(
+                                    operacionTexto
+                                )
+                            )
+                            {
+                                var segmentos =
+                                    operacionTexto.Split(
+                                        ';',
+                                        StringSplitOptions
+                                            .RemoveEmptyEntries |
+                                        StringSplitOptions
+                                            .TrimEntries
+                                    );
+
+                                foreach (
+                                    string segmento
+                                    in segmentos
+                                )
+                                {
+                                    string texto =
+                                        segmento
+                                            .Trim()
+                                            .TrimEnd('.');
+
+                                    int posicionDosPuntos =
+                                        texto.IndexOf(
+                                            ':'
+                                        );
+
+                                    if (
+                                        posicionDosPuntos > 0
+                                    )
+                                    {
+                                        string campo =
+                                            texto[
+                                                ..posicionDosPuntos
+                                            ]
+                                            .Trim();
+
+                                        string valor =
+                                            texto[
+                                                (posicionDosPuntos + 1)..
+                                            ]
+                                            .Trim();
+
+                                        datosOperacion.Add(
+                                            (
+                                                campo,
+                                                valor
+                                            )
+                                        );
+                                    }
+                                    else
+                                    {
+                                        if (
+                                            string.IsNullOrWhiteSpace(
+                                                resumenOperacion
+                                            )
+                                        )
+                                        {
+                                            resumenOperacion =
+                                                texto;
+                                        }
+                                        else
+                                        {
+                                            resumenOperacion +=
+                                                " " +
+                                                texto;
+                                        }
+                                    }
+                                }
+                            }
+
+
+                            // ==============================
+                            // CAMBIOS ANTES / DESPUÉS
+                            // ==============================
 
                             string[] cambios =
                                 Array.Empty<string>();
 
-                            if (tieneCambios)
+                            if (
+                                !string.IsNullOrWhiteSpace(
+                                    cambiosTexto
+                                )
+                            )
                             {
-                                string textoCambios =
-                                    descripcion[
-                                        (posicionCambios + 8)..
-                                    ]
-                                    .Trim()
-                                    .TrimEnd('.');
-
                                 cambios =
-                                    textoCambios.Split(
-                                        "; ",
-                                        StringSplitOptions
-                                            .RemoveEmptyEntries
-                                    );
+                                    cambiosTexto
+                                        .TrimEnd('.')
+                                        .Split(
+                                            "; ",
+                                            StringSplitOptions
+                                                .RemoveEmptyEntries
+                                        );
                             }
 
 
                             <tr>
 
-                                <!-- FECHA -->
+                                <!-- ======================
+                                     FECHA / HORA
+                                     ====================== -->
 
-                                <td class="text-nowrap">
+                                <td class="audit-date">
 
-                                    <strong>
+                                    <div class="fw-semibold">
 
                                         @(
-                                            auditoria.FechaHora
+                                            auditoria
+                                                .FechaHora
                                                 .ToString(
                                                     "dd/MM/yyyy"
                                                 )
                                         )
 
-                                    </strong>
+                                    </div>
 
-                                    <div class="small text-muted">
+                                    <div class="small
+                                                text-muted">
 
                                         @(
-                                            auditoria.FechaHora
+                                            auditoria
+                                                .FechaHora
                                                 .ToString(
                                                     "HH:mm:ss"
                                                 )
@@ -769,45 +961,26 @@
                                 </td>
 
 
-                                <!-- USUARIO -->
+                                <!-- ======================
+                                     USUARIO
+                                     ====================== -->
 
                                 <td class="audit-user">
 
                                     @if (
-                                        auditoria.Usuario != null
+                                        auditoria.Usuario !=
+                                        null
                                     )
                                     {
-                                        <div class="fw-semibold">
+                                        <strong>
 
                                             @(
-                                                auditoria.Usuario.Username
+                                                auditoria
+                                                    .Usuario
+                                                    .Username
                                             )
 
-                                        </div>
-
-                                        <div class="small text-muted">
-
-                                            @(
-                                                auditoria.Usuario.Nombres
-                                            )
-
-                                            @(
-                                                auditoria.Usuario.Apellidos
-                                            )
-
-                                        </div>
-
-                                        <span class="badge
-                                                     bg-light
-                                                     text-dark
-                                                     border
-                                                     mt-1">
-
-                                            @(
-                                                auditoria.Usuario.Rol
-                                            )
-
-                                        </span>
+                                        </strong>
                                     }
                                     else
                                     {
@@ -821,88 +994,42 @@
                                 </td>
 
 
-                                <!-- ACCIÓN -->
+                                <!-- ======================
+                                     ACCIÓN
+                                     ====================== -->
 
-                                <td>
+                                <td class="audit-action">
 
-                                    <span class="badge
-                                                 rounded-pill
-                                                 @accionClase
-                                                 px-3
-                                                 py-2">
-
-                                        @(
-                                            auditoria.Accion
-                                        )
-
-                                    </span>
-
-                                </td>
-
-
-                                <!-- RECURSO -->
-
-                                <td>
-
-                                    @if (
-                                        !string.IsNullOrWhiteSpace(
-                                            auditoria.TablaAfectada
-                                        )
-                                    )
-                                    {
-                                        <div class="fw-semibold">
-
-                                            @(
-                                                auditoria.TablaAfectada
+                                    @(
+                                        auditoria.Accion
+                                            .Replace(
+                                                "_",
+                                                " "
                                             )
-
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">
-                                            -
-                                        </span>
-                                    }
-
-                                    @if (
-                                        !string.IsNullOrWhiteSpace(
-                                            auditoria.RegistroAfectado
-                                        )
                                     )
-                                    {
-                                        <span class="audit-table-id">
-
-                                            ID:
-                                            @(
-                                                auditoria.RegistroAfectado
-                                            )
-
-                                        </span>
-                                    }
 
                                 </td>
 
 
-                                <!-- IP -->
+                                <!-- ======================
+                                     IP
+                                     ====================== -->
 
-                                <td>
+                                <td class="audit-ip">
 
-                                    <span class="audit-ip">
-
-                                        @(
-                                            auditoria.DireccionIp
-                                            ?? "-"
-                                        )
-
-                                    </span>
+                                    @(
+                                        auditoria.DireccionIp
+                                        ?? "-"
+                                    )
 
                                 </td>
 
 
-                                <!-- RESULTADO -->
+                                <!-- ======================
+                                     RESULTADO
+                                     ====================== -->
 
-                                <td>
+                                <td class="audit-result">
 
                                     @if (
                                         auditoria.Resultado ==
@@ -931,127 +1058,192 @@
                                 </td>
 
 
-                                <!-- DESCRIPCIÓN -->
+                                <!-- ======================
+                                     DETALLE
+                                     ====================== -->
 
-                                <td class="audit-description">
+                                <td class="audit-detail">
 
-                                    @if (
-                                        string.IsNullOrWhiteSpace(
-                                            descripcion
-                                        )
-                                    )
-                                    {
-                                        <span class="text-muted">
+                                    <div class="audit-operation">
 
-                                            Sin descripción
 
-                                        </span>
-                                    }
-                                    else if (tieneCambios)
-                                    {
-                                        <div class="audit-description-summary">
-
-                                            @resumenDescripcion
-
-                                        </div>
-
-                                        @foreach (
-                                            string cambio in cambios
+                                        @if (
+                                            !string.IsNullOrWhiteSpace(
+                                                resumenOperacion
+                                            )
                                         )
                                         {
-                                            int separadorCampo =
-                                                cambio.IndexOf(
-                                                    ':'
-                                                );
+                                            <div class="audit-operation-title">
 
-                                            string campo =
-                                                separadorCampo >= 0
-                                                    ? cambio[
-                                                        ..separadorCampo
-                                                      ].Trim()
-                                                    : "Cambio";
+                                                @resumenOperacion
 
-                                            string detalle =
-                                                separadorCampo >= 0
-                                                    ? cambio[
-                                                        (separadorCampo + 1)..
-                                                      ].Trim()
-                                                    : cambio.Trim();
+                                            </div>
+                                        }
 
-                                            string[] valores =
-                                                detalle.Split(
-                                                    " → ",
-                                                    2,
-                                                    StringSplitOptions.None
-                                                );
 
-                                            <div class="audit-change">
+                                        @if (
+                                            datosOperacion.Any()
+                                        )
+                                        {
+                                            <div class="audit-data-grid">
 
-                                                <div class="audit-change-field">
-
-                                                    @campo
-
-                                                </div>
-
-                                                @if (
-                                                    valores.Length == 2
+                                                @foreach (
+                                                    var dato
+                                                    in datosOperacion
                                                 )
                                                 {
-                                                    <div class="d-flex
-                                                                flex-wrap
-                                                                align-items-center
-                                                                gap-1">
+                                                    <div class="audit-data-item">
 
-                                                        <span class="audit-value
-                                                                     audit-value-before">
+                                                        <span class="audit-data-label">
 
-                                                            <strong>
-                                                                Antes:
-                                                            </strong>
-
-                                                            @valores[0]
+                                                            @dato.Campo
 
                                                         </span>
 
-                                                        <span class="audit-arrow">
+                                                        <span class="audit-data-value">
 
-                                                            →
-
-                                                        </span>
-
-                                                        <span class="audit-value
-                                                                     audit-value-after">
-
-                                                            <strong>
-                                                                Después:
-                                                            </strong>
-
-                                                            @valores[1]
+                                                            @dato.Valor
 
                                                         </span>
 
                                                     </div>
                                                 }
-                                                else
-                                                {
-                                                    <span class="small">
-
-                                                        @detalle
-
-                                                    </span>
-                                                }
 
                                             </div>
                                         }
-                                    }
-                                    else
-                                    {
-                                        <div class="audit-description-summary mb-0">
 
-                                            @descripcion
 
-                                        </div>
-                                    }
+                                        @if (cambios.Any())
+                                        {
+                                            <div class="audit-changes-title">
+
+                                                Cambios realizados
+
+                                            </div>
+
+
+                                            @foreach (
+                                                string cambio
+                                                in cambios
+                                            )
+                                            {
+                                                int separadorCampo =
+                                                    cambio
+                                                        .IndexOf(
+                                                            ':'
+                                                        );
+
+                                                string campo =
+                                                    separadorCampo >= 0
+                                                        ? cambio[
+                                                            ..separadorCampo
+                                                          ].Trim()
+                                                        : "Cambio";
+
+                                                string detalle =
+                                                    separadorCampo >= 0
+                                                        ? cambio[
+                                                            (separadorCampo + 1)..
+                                                          ].Trim()
+                                                        : cambio.Trim();
+
+                                                string[] valores =
+                                                    detalle.Split(
+                                                        " → ",
+                                                        2,
+                                                        StringSplitOptions
+                                                            .None
+                                                    );
+
+
+                                                <div class="audit-change">
+
+                                                    <div class="audit-change-field">
+
+                                                        @campo
+
+                                                    </div>
+
+
+                                                    @if (
+                                                        valores.Length ==
+                                                        2
+                                                    )
+                                                    {
+                                                        <div class="d-flex
+                                                                    flex-wrap
+                                                                    align-items-center">
+
+                                                            <span class="audit-value
+                                                                         audit-value-before">
+
+                                                                <strong>
+
+                                                                    Antes:
+
+                                                                </strong>
+
+                                                                &nbsp;
+
+                                                                @valores[0]
+
+                                                            </span>
+
+
+                                                            <span class="audit-arrow">
+
+                                                                →
+
+                                                            </span>
+
+
+                                                            <span class="audit-value
+                                                                         audit-value-after">
+
+                                                                <strong>
+
+                                                                    Después:
+
+                                                                </strong>
+
+                                                                &nbsp;
+
+                                                                @valores[1]
+
+                                                            </span>
+
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="small">
+
+                                                            @detalle
+
+                                                        </span>
+                                                    }
+
+                                                </div>
+                                            }
+                                        }
+
+
+                                        @if (
+                                            string.IsNullOrWhiteSpace(
+                                                resumenOperacion
+                                            ) &&
+                                            !datosOperacion.Any() &&
+                                            !cambios.Any()
+                                        )
+                                        {
+                                            <span class="text-muted">
+
+                                                Sin detalle
+
+                                            </span>
+                                        }
+
+                                    </div>
 
                                 </td>
 
@@ -1077,8 +1269,9 @@
 
         <small class="text-muted">
 
-            Se muestran como máximo los 500 registros
-            más recientes que coincidan con los filtros
+            Se muestran como máximo
+            los 500 registros más recientes
+            que coincidan con los filtros
             seleccionados.
 
         </small>

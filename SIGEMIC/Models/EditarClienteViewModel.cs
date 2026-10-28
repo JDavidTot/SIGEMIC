@@ -6,20 +6,57 @@ namespace SIGEMIC.Models
     {
         public uint IdCliente { get; set; }
 
-        [Required(ErrorMessage = "Ingrese los nombres.")]
+        [Required(
+            ErrorMessage =
+                "Ingrese los nombres."
+        )]
         [StringLength(100)]
         [Display(Name = "Nombres")]
-        public string Nombres { get; set; } = "";
+        public string Nombres { get; set; }
+            = string.Empty;
 
-        [Required(ErrorMessage = "Ingrese los apellidos.")]
+        [Required(
+            ErrorMessage =
+                "Ingrese los apellidos."
+        )]
         [StringLength(100)]
         [Display(Name = "Apellidos")]
-        public string Apellidos { get; set; } = "";
+        public string Apellidos { get; set; }
+            = string.Empty;
 
-        [Required(ErrorMessage = "Ingrese el nombre de usuario.")]
+        // =====================================================
+        // CORREO
+        // =====================================================
+
+        [Required(
+            ErrorMessage =
+                "Ingrese el correo electrónico."
+        )]
+        [EmailAddress(
+            ErrorMessage =
+                "Ingrese un correo electrónico válido."
+        )]
+        [StringLength(150)]
+        [Display(Name = "Correo electrónico")]
+        public string Correo { get; set; }
+            = string.Empty;
+
+        // =====================================================
+        // USUARIO
+        // =====================================================
+
+        [Required(
+            ErrorMessage =
+                "Ingrese el nombre de usuario."
+        )]
         [StringLength(50)]
         [Display(Name = "Usuario")]
-        public string Username { get; set; } = "";
+        public string Username { get; set; }
+            = string.Empty;
+
+        // =====================================================
+        // INFORMACIÓN PERSONAL
+        // =====================================================
 
         [DataType(DataType.Date)]
         [Display(Name = "Fecha de nacimiento")]
@@ -33,6 +70,10 @@ namespace SIGEMIC.Models
         [Display(Name = "Teléfono")]
         public string? Telefono { get; set; }
 
+        // =====================================================
+        // INFORMACIÓN LABORAL
+        // =====================================================
+
         [StringLength(100)]
         [Display(Name = "Profesión")]
         public string? Profesion { get; set; }
@@ -45,11 +86,13 @@ namespace SIGEMIC.Models
             typeof(decimal),
             "0",
             "999999999.99",
-            ErrorMessage = "El ingreso mensual no puede ser negativo."
+            ErrorMessage =
+                "El ingreso mensual no puede ser negativo."
         )]
         [Display(Name = "Ingreso mensual")]
         public decimal? IngresoMensual { get; set; }
 
-        public string Estado { get; set; } = "";
+        public string Estado { get; set; }
+            = string.Empty;
     }
 }

@@ -4,171 +4,325 @@
     ViewData["Title"] = "Editar cliente";
 }
 
-<div class="container mt-4">
+<div class="container mt-4 mb-5">
+
     <div class="mb-4">
-        <h2 class="mb-1">Editar cliente</h2>
+
+        <h2 class="mb-1">
+            Editar cliente
+        </h2>
+
         <p class="text-muted mb-0">
-            Actualiza la información del cliente.
+            Actualiza la información personal,
+            laboral y de acceso del cliente.
         </p>
+
     </div>
 
-    <form asp-action="Edit"
+
+    <form asp-controller="Clientes"
+          asp-action="Edit"
           asp-route-id="@Model.IdCliente"
           method="post">
 
         @Html.AntiForgeryToken()
 
-        <input type="hidden"
-               asp-for="IdCliente" />
+        <input asp-for="IdCliente"
+               type="hidden" />
+
+        <input asp-for="Estado"
+               type="hidden" />
+
 
         <div asp-validation-summary="ModelOnly"
              class="alert alert-danger">
         </div>
 
+
+        <!-- =============================================
+             INFORMACIÓN PERSONAL
+             ============================================= -->
+
         <div class="card shadow-sm mb-4">
-            <div class="card-header fw-semibold">
-                Información personal
+
+            <div class="card-header">
+
+                <strong>
+                    Información personal
+                </strong>
+
             </div>
 
             <div class="card-body">
+
                 <div class="row g-3">
+
                     <div class="col-md-6">
-                        <label asp-for="Nombres" class="form-label">
-                            Nombres
+
+                        <label asp-for="Nombres"
+                               class="form-label">
                         </label>
-                        <input asp-for="Nombres" class="form-control" />
+
+                        <input asp-for="Nombres"
+                               class="form-control" />
+
                         <span asp-validation-for="Nombres"
-                              class="text-danger"></span>
+                              class="text-danger">
+                        </span>
+
                     </div>
 
+
                     <div class="col-md-6">
-                        <label asp-for="Apellidos" class="form-label">
-                            Apellidos
+
+                        <label asp-for="Apellidos"
+                               class="form-label">
                         </label>
-                        <input asp-for="Apellidos" class="form-control" />
+
+                        <input asp-for="Apellidos"
+                               class="form-control" />
+
                         <span asp-validation-for="Apellidos"
-                              class="text-danger"></span>
+                              class="text-danger">
+                        </span>
+
                     </div>
 
-                    <div class="col-md-6">
-                        <label asp-for="Username" class="form-label">
-                            Usuario
-                        </label>
-                        <input asp-for="Username" class="form-control" />
-                        <span asp-validation-for="Username"
-                              class="text-danger"></span>
-                    </div>
 
                     <div class="col-md-6">
-                        <label asp-for="FechaNacimiento" class="form-label">
-                            Fecha de nacimiento
+
+                        <label asp-for="FechaNacimiento"
+                               class="form-label">
                         </label>
+
                         <input asp-for="FechaNacimiento"
                                type="date"
                                class="form-control" />
+
                         <span asp-validation-for="FechaNacimiento"
-                              class="text-danger"></span>
+                              class="text-danger">
+                        </span>
+
                     </div>
 
+
                     <div class="col-md-6">
-                        <label asp-for="Telefono" class="form-label">
-                            Teléfono
+
+                        <label asp-for="Telefono"
+                               class="form-label">
                         </label>
-                        <input asp-for="Telefono" class="form-control" />
+
+                        <input asp-for="Telefono"
+                               class="form-control" />
+
                         <span asp-validation-for="Telefono"
-                              class="text-danger"></span>
+                              class="text-danger">
+                        </span>
+
                     </div>
 
-                    <div class="col-md-6">
-                        <label asp-for="Direccion" class="form-label">
-                            Dirección
+
+                    <div class="col-md-12">
+
+                        <label asp-for="Direccion"
+                               class="form-label">
                         </label>
-                        <input asp-for="Direccion" class="form-control" />
+
+                        <input asp-for="Direccion"
+                               class="form-control" />
+
                         <span asp-validation-for="Direccion"
-                              class="text-danger"></span>
+                              class="text-danger">
+                        </span>
+
                     </div>
+
                 </div>
+
             </div>
+
         </div>
 
+
+        <!-- =============================================
+             INFORMACIÓN LABORAL
+             ============================================= -->
+
         <div class="card shadow-sm mb-4">
-            <div class="card-header fw-semibold">
-                Información laboral
+
+            <div class="card-header">
+
+                <strong>
+                    Información laboral
+                </strong>
+
             </div>
 
             <div class="card-body">
+
                 <div class="row g-3">
+
                     <div class="col-md-6">
-                        <label asp-for="Profesion" class="form-label">
-                            Profesión
+
+                        <label asp-for="Profesion"
+                               class="form-label">
                         </label>
-                        <input asp-for="Profesion" class="form-control" />
+
+                        <input asp-for="Profesion"
+                               class="form-control" />
+
                         <span asp-validation-for="Profesion"
-                              class="text-danger"></span>
+                              class="text-danger">
+                        </span>
+
                     </div>
 
+
                     <div class="col-md-6">
-                        <label asp-for="LugarTrabajo" class="form-label">
-                            Lugar de trabajo
+
+                        <label asp-for="LugarTrabajo"
+                               class="form-label">
                         </label>
-                        <input asp-for="LugarTrabajo" class="form-control" />
+
+                        <input asp-for="LugarTrabajo"
+                               class="form-control" />
+
                         <span asp-validation-for="LugarTrabajo"
-                              class="text-danger"></span>
+                              class="text-danger">
+                        </span>
+
                     </div>
 
+
                     <div class="col-md-6">
-                        <label asp-for="IngresoMensual" class="form-label">
-                            Ingreso mensual
+
+                        <label asp-for="IngresoMensual"
+                               class="form-label">
                         </label>
 
                         <div class="input-group">
-                            <span class="input-group-text">Q</span>
+
+                            <span class="input-group-text">
+                                Q
+                            </span>
+
                             <input asp-for="IngresoMensual"
-                                   class="form-control"
-                                   type="number"
-                                   step="0.01"
-                                   min="0" />
+                                   class="form-control" />
+
                         </div>
 
                         <span asp-validation-for="IngresoMensual"
-                              class="text-danger"></span>
+                              class="text-danger">
+                        </span>
+
                     </div>
 
-                    <div class="col-md-6">
-                        <label asp-for="Estado" class="form-label">
-                            Estado actual
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =============================================
+             ACCESO AL SISTEMA
+             ============================================= -->
+
+        <div class="card shadow-sm mb-4">
+
+            <div class="card-header">
+
+                <strong>
+                    Acceso al sistema
+                </strong>
+
+            </div>
+
+            <div class="card-body">
+
+                <div class="row g-3">
+
+
+                    <!-- CORREO -->
+
+                    <div class="col-md-12">
+
+                        <label asp-for="Correo"
+                               class="form-label">
                         </label>
 
-                        <input class="form-control"
-                               value="@Model.Estado"
-                               readonly />
+                        <input asp-for="Correo"
+                               type="email"
+                               class="form-control"
+                               autocomplete="email" />
 
-                        <input type="hidden"
-                               asp-for="Estado" />
+                        <div class="form-text">
+                            El correo se utilizará para
+                            recuperación de contraseña.
+                        </div>
 
-                        <small class="text-muted">
-                            El estado se cambia desde la opción correspondiente del listado.
-                        </small>
+                        <span asp-validation-for="Correo"
+                              class="text-danger">
+                        </span>
+
                     </div>
+
+
+                    <!-- USERNAME -->
+
+                    <div class="col-md-6">
+
+                        <label asp-for="Username"
+                               class="form-label">
+                        </label>
+
+                        <input asp-for="Username"
+                               class="form-control" />
+
+                        <span asp-validation-for="Username"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
                 </div>
+
             </div>
+
         </div>
+
 
         <div class="d-flex gap-2">
+
             <button type="submit"
                     class="btn btn-primary">
+
                 Guardar cambios
+
             </button>
 
-            <a asp-action="Details"
+            <a asp-controller="Clientes"
+               asp-action="Details"
                asp-route-id="@Model.IdCliente"
                class="btn btn-outline-secondary">
+
                 Cancelar
+
             </a>
+
         </div>
+
     </form>
+
 </div>
 
+
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+
+    @{
+        await Html.RenderPartialAsync(
+            "_ValidationScriptsPartial"
+        );
+    }
+
 }

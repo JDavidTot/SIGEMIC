@@ -8,39 +8,84 @@ public class HomeController : Controller
 {
     public IActionResult Index()
     {
-        if (User.Identity?.IsAuthenticated == true)
+        // =============================================
+        // SI NO HAY SESIÓN -> LOGIN
+        // =============================================
+
+        if (
+            User.Identity?.IsAuthenticated
+            != true
+        )
         {
-            if (User.IsInRole("ADMINISTRADOR"))
-            {
-                return RedirectToAction(
-                    "Index",
-                    "Admin"
-                );
-            }
-
-            if (User.IsInRole("CAJERO"))
-            {
-                return RedirectToAction(
-                    "Index",
-                    "Cajero"
-                );
-            }
-
-            if (User.IsInRole("CLIENTE"))
-            {
-                return RedirectToAction(
-                    "Index",
-                    "Cliente"
-                );
-            }
+            return RedirectToAction(
+                "Login",
+                "Account"
+            );
         }
 
-        return View();
+        // =============================================
+        // ADMINISTRADOR -> DASHBOARD
+        // =============================================
+
+        if (
+            User.IsInRole(
+                "ADMINISTRADOR"
+            )
+        )
+        {
+            return RedirectToAction(
+                "Index",
+                "Admin"
+            );
+        }
+
+        // =============================================
+        // CAJERO -> DASHBOARD
+        // =============================================
+
+        if (
+            User.IsInRole(
+                "CAJERO"
+            )
+        )
+        {
+            return RedirectToAction(
+                "Index",
+                "Cajero"
+            );
+        }
+
+        // =============================================
+        // CLIENTE -> MI CUENTA
+        // =============================================
+
+        if (
+            User.IsInRole(
+                "CLIENTE"
+            )
+        )
+        {
+            return RedirectToAction(
+                "Index",
+                "Cliente"
+            );
+        }
+
+        // =============================================
+        // ROL NO RECONOCIDO
+        // =============================================
+
+        return RedirectToAction(
+            "AccessDenied",
+            "Account"
+        );
     }
 
     public IActionResult Privacy()
     {
-        return View();
+        return RedirectToAction(
+            nameof(Index)
+        );
     }
 
     [ResponseCache(

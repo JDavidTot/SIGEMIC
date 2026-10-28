@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using SIGEMIC.Data;
 using SIGEMIC.Models;
@@ -19,9 +20,9 @@ namespace SIGEMIC.Controllers
 
         [HttpGet]
         public async Task<IActionResult> Index(
+            string? usuario,
             string? accion,
             string? resultado,
-            string? usuario,
             DateTime? desde,
             DateTime? hasta)
         {
@@ -29,6 +30,20 @@ namespace SIGEMIC.Controllers
                 _context.Auditorias
                     .AsNoTracking()
                     .Include(a => a.Usuario);
+
+            // =============================================
+            // FILTRO POR USUARIO
+            // =============================================
+
+            if (!string.IsNullOrWhiteSpace(usuario))
+            {
+                usuario = usuario.Trim();
+
+                consulta = consulta.Where(a =>
+                    a.Usuario != null &&
+                    a.Usuario.Username == usuario
+                );
+            }
 
             // =============================================
             // FILTRO POR ACCIÓN
@@ -39,7 +54,7 @@ namespace SIGEMIC.Controllers
                 accion = accion.Trim();
 
                 consulta = consulta.Where(a =>
-                    a.Accion.Contains(accion)
+                    a.Accion == accion
                 );
             }
 
@@ -66,24 +81,6 @@ namespace SIGEMIC.Controllers
             }
 
             // =============================================
-            // FILTRO POR USUARIO
-            // =============================================
-
-            if (!string.IsNullOrWhiteSpace(usuario))
-            {
-                usuario = usuario.Trim();
-
-                consulta = consulta.Where(a =>
-                    a.Usuario != null &&
-                    (
-                        a.Usuario.Username.Contains(usuario) ||
-                        a.Usuario.Nombres.Contains(usuario) ||
-                        a.Usuario.Apellidos.Contains(usuario)
-                    )
-                );
-            }
-
-            // =============================================
             // FILTRO DESDE
             // =============================================
 
@@ -99,7 +96,6 @@ namespace SIGEMIC.Controllers
 
             // =============================================
             // FILTRO HASTA
-            // Se suma un día para incluir todo el día.
             // =============================================
 
             if (hasta.HasValue)
@@ -115,14 +111,82 @@ namespace SIGEMIC.Controllers
             }
 
             // =============================================
-            // CONSERVAR FILTROS EN LA VISTA
+            // LISTA DE USUARIOS PARA FILTRO
             // =============================================
 
-            ViewBag.Accion = accion;
+            var usuariosBase =
+                await _context.Usuarios
+                    .AsNoTracking()
+                    .OrderBy(u => u.Rol)
+                    .ThenBy(u => u.Username)
+                    .Select(u => new
+                    {
+                        u.Username,
+                        u.Rol
+                    })
+                    .ToListAsync();
 
-            ViewBag.Resultado = resultado;
+            ViewBag.UsuariosFiltro =
+                usuariosBase
+                    .Select(u =>
+                        new SelectListItem
+                        {
+                            Value =
+                                u.Username,
 
-            ViewBag.Usuario = usuario;
+                            Text =
+                                $"{u.Username} — {u.Rol}",
+
+                            Selected =
+                                u.Username == usuario
+                        }
+                    )
+                    .ToList();
+
+            // =============================================
+            // LISTA DE ACCIONES PARA FILTRO
+            // Se obtiene automáticamente de Auditoría.
+            // =============================================
+
+            var acciones =
+                await _context.Auditorias
+                    .AsNoTracking()
+                    .Select(a => a.Accion)
+                    .Distinct()
+                    .OrderBy(a => a)
+                    .ToListAsync();
+
+            ViewBag.AccionesFiltro =
+                acciones
+                    .Select(a =>
+                        new SelectListItem
+                        {
+                            Value = a,
+
+                            Text =
+                                a.Replace(
+                                    "_",
+                                    " "
+                                ),
+
+                            Selected =
+                                a == accion
+                        }
+                    )
+                    .ToList();
+
+            // =============================================
+            // CONSERVAR FILTROS
+            // =============================================
+
+            ViewBag.Usuario =
+                usuario;
+
+            ViewBag.Accion =
+                accion;
+
+            ViewBag.Resultado =
+                resultado;
 
             ViewBag.Desde =
                 desde?.ToString(
@@ -135,8 +199,7 @@ namespace SIGEMIC.Controllers
                 );
 
             // =============================================
-            // OBTENER REGISTROS
-            // Máximo 500 para no cargar demasiado.
+            // OBTENER AUDITORÍA
             // =============================================
 
             var auditorias =

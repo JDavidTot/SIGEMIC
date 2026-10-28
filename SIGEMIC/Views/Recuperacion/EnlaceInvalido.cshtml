@@ -1,0 +1,58 @@
+@{
+    ViewData["Title"] =
+        "Enlace no válido";
+}
+
+
+<div class="container mt-5">
+
+    <div class="row
+                justify-content-center">
+
+        <div class="col-md-6">
+
+            <div class="card
+                        shadow-sm
+                        border-0">
+
+                <div class="card-body
+                            text-center
+                            p-5">
+
+
+                    <div class="fs-1 mb-3">
+                        ⚠
+                    </div>
+
+
+                    <h3>
+                        Enlace no válido
+                    </h3>
+
+
+                    <p class="text-muted">
+
+                        El enlace de recuperación
+                        ha expirado, ya fue utilizado
+                        o no es válido.
+
+                    </p>
+
+
+                    <a asp-controller="Recuperacion"
+                       asp-action="OlvidePassword"
+                       class="btn btn-primary">
+
+                        Solicitar otro enlace
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

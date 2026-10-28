@@ -30,8 +30,19 @@ namespace SIGEMIC.Models
         [Column("password_hash")]
         public string PasswordHash { get; set; } = string.Empty;
 
+        // =====================================================
+        // CORREO
+        // =====================================================
+
         [Column("correo_cifrado")]
         public byte[]? CorreoCifrado { get; set; }
+
+        [Column("correo_hash")]
+        public byte[]? CorreoHash { get; set; }
+
+        // =====================================================
+        // SEGURIDAD / ROL
+        // =====================================================
 
         [Required]
         [Column("rol")]
@@ -50,10 +61,16 @@ namespace SIGEMIC.Models
         [Column("fecha_creacion")]
         public DateTime FechaCreacion { get; set; }
 
-        public Cliente? Cliente { get; set; }
-        public ICollection<Pago> Pagos { get; set; } = new List<Pago>();
+        // =====================================================
+        // RELACIONES
+        // =====================================================
 
-public ICollection<Auditoria> Auditorias { get; set; }
-    = new List<Auditoria>();
+        public Cliente? Cliente { get; set; }
+
+        public ICollection<Pago> Pagos { get; set; }
+            = new List<Pago>();
+
+        public ICollection<Auditoria> Auditorias { get; set; }
+            = new List<Auditoria>();
     }
 }
